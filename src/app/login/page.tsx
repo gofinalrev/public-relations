@@ -1,6 +1,6 @@
 import { signIn, auth } from "@/lib/auth";
 import { isGoogleAuthConfigured, getAllowedEmailDomains } from "@/lib/auth/allowed-email";
-import { AuthCard, AuthShell } from "@/components/auth/auth-shell";
+import { AuthBrand, AuthCard, AuthShell } from "@/components/auth/auth-shell";
 import { redirect } from "next/navigation";
 
 type LoginPageProps = {
@@ -14,7 +14,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect(params.callbackUrl ?? "/");
   }
 
-  const configured = isGoogleAuthConfigured();
+  const configured =
+    isGoogleAuthConfigured() ||
+    Boolean(process.env.AUTH_SECRET?.trim() && process.env.GOOGLE_CLIENT_ID?.trim());
   const domains = getAllowedEmailDomains().join(", @");
 
   async function signInWithGoogle() {
@@ -24,67 +26,28 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <AuthShell>
-      <div className="grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1fr,minmax(0,26rem)] lg:gap-16">
-        <div className="hidden text-center lg:block lg:text-left">
-          <div className="mb-5 flex flex-wrap justify-center gap-2 lg:justify-start">
-            {["Social metrics", "Tooltrace funnel", "Weekly briefs"].map((tag) => (
-              <span
-                key={tag}
-                className="rounded-sm border border-white/[0.12] bg-black/45 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-white/60 backdrop-blur-sm"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-          <h2 className="text-4xl font-black leading-[0.95] tracking-tight text-white xl:text-5xl">
-            PR metrics.
-            <br />
-            <span className="text-primary">One dashboard.</span>
-          </h2>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-white/60">
-            Weekly performance across social, Tooltrace, and finalREV — built for the team.
+      <AuthBrand />
+      <AuthCard>
+        {params.error === "AccessDenied" && (
+          <p className="mb-5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            Use an @{domains} account.
           </p>
-        </div>
+        )}
 
-        <AuthCard>
-        <div className="space-y-6">
-          <div className="space-y-2 text-center sm:text-left">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-primary/80">
-              PR Dashboard
-            </p>
-            <h1 className="text-3xl font-black tracking-tight text-white">Welcome back</h1>
-            <p className="text-sm leading-relaxed text-white/55">
-              Sign in with your <span className="font-medium text-white/80">@{domains}</span> Google account.
-            </p>
-          </div>
-
-          {params.error === "AccessDenied" && (
-            <p className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2.5 text-center text-sm text-red-300">
-              Access denied — approved @{domains} accounts only.
-            </p>
-          )}
-
-          {configured ? (
-            <form action={signInWithGoogle} className="space-y-4">
-              <button
-                type="submit"
-                className="auth-google-btn group flex h-12 w-full items-center justify-center gap-2.5 rounded-lg border border-white/12 bg-white/[0.04] text-sm font-semibold text-white transition-all duration-300 hover:border-primary/35 hover:bg-white/[0.07] hover:shadow-[0_0_28px_-6px_rgba(204,255,0,0.35)] active:scale-[0.99]"
-              >
-                <GoogleIcon />
-                Continue with Google
-              </button>
-              <p className="text-center text-xs text-white/40">
-                Team access only · encrypted session
-              </p>
-            </form>
-          ) : (
-            <p className="text-center text-sm text-white/50">
-              Sign-in is not configured on this environment.
-            </p>
-          )}
-        </div>
+        {configured ? (
+          <form action={signInWithGoogle}>
+            <button
+              type="submit"
+              className="flex h-12 w-full items-center justify-center gap-2.5 rounded-lg border border-white/12 bg-white/[0.04] text-sm font-semibold text-white transition-all hover:border-primary/35 hover:bg-white/[0.07] hover:shadow-[0_0_28px_-6px_rgba(204,255,0,0.35)] active:scale-[0.99]"
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
+          </form>
+        ) : (
+          <p className="text-sm text-white/50">Sign-in unavailable.</p>
+        )}
       </AuthCard>
-      </div>
     </AuthShell>
   );
 }

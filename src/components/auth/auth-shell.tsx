@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { FinalrevWordmark } from "@/components/auth/finalrev-wordmark";
 import { cn } from "@/lib/utils";
 
 type AuthShellProps = {
@@ -9,35 +7,16 @@ type AuthShellProps = {
 
 export function AuthShell({ children, className }: AuthShellProps) {
   return (
-    <div className="dark auth-canvas relative flex min-h-dvh flex-col text-foreground">
+    <div className="dark auth-canvas relative flex min-h-dvh flex-col items-center justify-center px-4 py-10 text-foreground">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" aria-hidden />
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(204,255,0,0.14),transparent_42%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(204,255,0,0.12),transparent_45%)]"
         aria-hidden
       />
 
-      <header className="relative z-10 flex items-center justify-between px-5 py-5 sm:px-8">
-        <Link href="https://www.finalrev.com" className="transition-opacity hover:opacity-80">
-          <FinalrevWordmark />
-        </Link>
-        <span className="hidden rounded-full border border-white/10 bg-black/40 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50 sm:inline">
-          Internal
-        </span>
-      </header>
-
-      <main className={cn("relative z-10 flex flex-1 flex-col items-center justify-center px-4 pb-10 pt-4 sm:px-6", className)}>
+      <main className={cn("relative z-10 flex w-full max-w-sm flex-col items-center", className)}>
         {children}
       </main>
-
-      <footer className="relative z-10 flex flex-col items-center gap-2 px-4 pb-6 text-center sm:pb-8">
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/35">pr.finalrev.com</p>
-        <Link
-          href="https://www.finalrev.com"
-          className="text-xs text-white/40 transition-colors hover:text-primary"
-        >
-          finalrev.com
-        </Link>
-      </footer>
     </div>
   );
 }
@@ -51,7 +30,7 @@ export function AuthCard({ children, className }: AuthCardProps) {
   return (
     <div
       className={cn(
-        "auth-card relative w-full max-w-[26rem] overflow-hidden rounded-2xl border border-white/[0.08] bg-black/50 p-8 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.85)] backdrop-blur-xl sm:p-10",
+        "auth-card relative w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-black/50 p-8 text-center shadow-[0_24px_80px_-24px_rgba(0,0,0,0.85)] backdrop-blur-xl sm:p-10",
         className,
       )}
     >
@@ -60,6 +39,23 @@ export function AuthCard({ children, className }: AuthCardProps) {
         aria-hidden
       />
       {children}
+    </div>
+  );
+}
+
+function FinalrevMark() {
+  return (
+    <p className="text-2xl font-black tracking-tight text-white">
+      final<span className="text-primary">REV</span>
+    </p>
+  );
+}
+
+export function AuthBrand() {
+  return (
+    <div className="mb-8 text-center">
+      <FinalrevMark />
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/40">PR Dashboard</p>
     </div>
   );
 }
