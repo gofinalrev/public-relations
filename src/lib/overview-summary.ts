@@ -178,7 +178,6 @@ export type OverviewViewProps = {
   summary: OverviewSummary;
   metrics: { views: number; engagement: number; visitors: number; subs: number };
   prev: { views: number; engagement: number; visitors: number; subs: number } | null;
-  subsSource: string;
-  postHighlightsJson?: string | null;
   history: WeeklyReport[];
+  postHighlightsJson?: string | null;
 };

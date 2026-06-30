@@ -38,8 +38,7 @@ export function WeekSelector({ weekStart }: WeekSelectorProps) {
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 items-center gap-0.5 border border-foreground/[0.08] bg-card/80 p-0.5 backdrop-blur-sm",
-        "sm:w-auto sm:gap-1 sm:p-1",
+        "flex w-full min-w-0 items-center gap-0.5 rounded-lg border border-foreground/[0.08] bg-card/80 p-0.5 backdrop-blur-sm sm:w-auto sm:max-w-xs sm:gap-1 sm:p-1",
       )}
     >
       <Button

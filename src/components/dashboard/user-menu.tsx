@@ -9,7 +9,8 @@ export async function UserMenu() {
   const session = await auth();
   if (!session?.user) return null;
 
-  const label = session.user.name?.split(" ")[0] ?? session.user.email?.split("@")[0] ?? "Team";
+  const name = session.user.name?.split(" ")[0] ?? session.user.email?.split("@")[0] ?? "Team";
+  const initial = name.charAt(0).toUpperCase();
 
   async function handleSignOut() {
     "use server";
@@ -18,10 +19,27 @@ export async function UserMenu() {
 
   return (
     <form action={handleSignOut} className="flex items-center gap-2">
-      <span className="hidden text-xs text-muted-foreground sm:inline" title={session.user.email ?? undefined}>
-        {label}
+      <div
+        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary"
+        title={session.user.email ?? undefined}
+        aria-hidden
+      >
+        {initial}
+      </div>
+      <span
+        className="hidden max-w-[5rem] truncate text-sm font-medium sm:inline md:max-w-[8rem]"
+        title={session.user.email ?? undefined}
+      >
+        {name}
       </span>
-      <Button type="submit" size="sm" variant="ghost" title="Sign out" className="min-h-[44px] sm:min-h-0">
+      <Button
+        type="submit"
+        size="icon"
+        variant="ghost"
+        title="Sign out"
+        aria-label="Sign out"
+        className="size-9 shrink-0 text-muted-foreground hover:text-foreground"
+      >
         <LogOut className="size-4" />
       </Button>
     </form>

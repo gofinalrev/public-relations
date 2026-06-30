@@ -1,6 +1,5 @@
 import { signIn, auth } from "@/lib/auth";
-import { isGoogleAuthConfigured } from "@/lib/auth/allowed-email";
-import { getAllowedEmailDomains } from "@/lib/auth/allowed-email";
+import { isGoogleAuthConfigured, getAllowedEmailDomains } from "@/lib/auth/allowed-email";
 import { FinalrevLogo } from "@/components/dashboard/logo";
 import { Button } from "@/components/ui/button";
 import { redirect } from "next/navigation";
@@ -25,40 +24,47 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm space-y-8 text-center">
-        <div className="flex justify-center">
-          <FinalrevLogo />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">PR Dashboard</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Sign in with Google · <span className="font-medium text-foreground">@{domains}</span>
-          </p>
+    <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10 sm:py-14">
+      <div className="glass-panel w-full max-w-[22rem] space-y-7 p-8 sm:max-w-md sm:p-10">
+        <div className="flex flex-col items-center gap-5 text-center">
+          <FinalrevLogo size={44} />
+          <div>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">PR Dashboard</h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Weekly metrics for social, Tooltrace, and finalREV.
+            </p>
+          </div>
         </div>
 
         {params.error === "AccessDenied" && (
-          <p className="border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            Access denied — use an approved @finalrev.com Google account.
+          <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-center text-sm text-destructive">
+            Access denied — sign in with an approved @{domains} account.
           </p>
         )}
 
         {configured ? (
-          <form action={signInWithGoogle}>
-            <Button type="submit" size="lg" className="w-full min-h-[44px] gap-2">
+          <form action={signInWithGoogle} className="space-y-3">
+            <Button
+              type="submit"
+              variant="outline"
+              size="lg"
+              className="h-11 w-full gap-2.5 border-foreground/12 bg-card text-foreground shadow-sm hover:bg-muted/60"
+            >
               <GoogleIcon />
-              Sign in with Google
+              Continue with Google
             </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Team access only · <span className="font-medium text-foreground">@{domains}</span>
+            </p>
           </form>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            Google sign-in is not configured yet. Add{" "}
-            <code className="text-xs">GOOGLE_CLIENT_ID</code>,{" "}
-            <code className="text-xs">GOOGLE_CLIENT_SECRET</code>, and{" "}
-            <code className="text-xs">AUTH_SECRET</code> to <code className="text-xs">.env.local</code>.
+          <p className="text-center text-sm text-muted-foreground">
+            Sign-in is not configured on this environment.
           </p>
         )}
       </div>
+
+      <p className="mt-8 text-xs text-muted-foreground/70">pr.finalrev.com</p>
     </div>
   );
 }

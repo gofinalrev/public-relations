@@ -32,7 +32,7 @@
   --chart-3: 0 0% 45%;
   --chart-4: 72 75% 42%;
   --chart-5: 0 0% 70%;
-  --radius: 0px;
+  --radius: 0.5rem;
 }
 
 .dark {
@@ -164,7 +164,7 @@
   }
 
   .glass-panel {
-    @apply border border-foreground/[0.08] bg-card/70 backdrop-blur-xl;
+    @apply rounded-xl border border-foreground/[0.08] bg-card/70 backdrop-blur-xl;
   }
 
   .lime-glow {

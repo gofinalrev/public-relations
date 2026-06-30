@@ -132,12 +132,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-foreground/[0.06] bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <FinalrevLogo />
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end sm:gap-3">
-            <UserMenu />
-            <ThemeToggle />
+      <header className="sticky top-0 z-30 border-b border-foreground/[0.06] bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto max-w-6xl px-3 py-3 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <FinalrevLogo />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <UserMenu />
+              <ThemeToggle />
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {!googleAuth && (
               <TeamShareLink
                 share={share}
@@ -145,7 +149,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 isPinned={Boolean(storedTeamUrl?.trim())}
               />
             )}
-            <Suspense fallback={<div className="h-9 w-full animate-pulse bg-muted sm:w-40" />}>
+            <Suspense fallback={<div className="h-10 flex-1 animate-pulse rounded-lg bg-muted sm:max-w-xs" />}>
               <WeekSelector weekStart={weekStart} />
             </Suspense>
           </div>
@@ -165,7 +169,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             summary={overviewSummary}
             metrics={metrics}
             prev={prev}
-            subsSource={subsSource}
             history={history}
             postHighlightsJson={report?.post_highlights_json}
           />

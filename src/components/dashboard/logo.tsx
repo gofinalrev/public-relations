@@ -47,7 +47,7 @@ export function FinalrevLogo({ className, size = 36 }: FinalrevLogoProps) {
           final<span className="text-primary">REV</span>
         </span>
         <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:text-[10px] sm:tracking-[0.25em]">
-          PR Hub
+          PR Dashboard
         </p>
       </div>
     </div>

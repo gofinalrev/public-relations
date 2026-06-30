@@ -55,13 +55,13 @@ export function OverviewTrendChart({ history, currentWeekKey }: OverviewTrendCha
                 contentStyle={{
                   background: "hsl(var(--card))",
                   border: "1px solid hsl(var(--border))",
-                  borderRadius: 0,
+                  borderRadius: 8,
                   fontSize: 12,
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
-              <Bar dataKey="visitors" name="Tooltrace visitors" fill="hsl(var(--chart-3))" radius={0} />
-              <Bar dataKey="subs" name="Tooltrace Pro" fill="hsl(var(--chart-4, var(--primary)))" radius={0} />
+              <Bar dataKey="visitors" name="Tooltrace visitors" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="subs" name="Tooltrace Pro" fill="hsl(var(--chart-4, var(--primary)))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -33,7 +33,7 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden border border-foreground/[0.08] bg-card/80 backdrop-blur-sm transition-all duration-300",
+        "group relative overflow-hidden rounded-xl border border-foreground/[0.08] bg-card/80 backdrop-blur-sm transition-all duration-300",
         compact ? "p-3 sm:p-4" : "p-4 sm:p-5",
         !compact && "hover:border-primary/30 hover:shadow-[0_0_32px_-8px_hsl(var(--primary)/0.25)]",
         highlight && "border-primary/40 bg-primary/[0.06] lime-glow",
@@ -70,7 +70,7 @@ export function MetricCard({
         {Icon && (
           <div
             className={cn(
-              "flex shrink-0 items-center justify-center border border-foreground/[0.06] bg-muted/50 text-primary",
+              "flex shrink-0 items-center justify-center rounded-lg border border-foreground/[0.06] bg-muted/50 text-primary",
               compact ? "size-8" : "size-9",
             )}
           >
@@ -123,7 +123,7 @@ function DeltaBadge({
   return (
     <span
       className={cn(
-        "flex items-center gap-0.5 rounded-none border px-1.5 py-0.5 text-xs font-semibold",
+        "flex items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-xs font-semibold",
         delta.positive
           ? "border-primary/30 bg-primary/10 text-primary"
           : "border-destructive/30 bg-destructive/10 text-destructive",
