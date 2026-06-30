@@ -13,17 +13,18 @@ const { auth } = NextAuth(authConfig);
 export default auth((req) => {
   const { nextUrl } = req;
   const pathname = nextUrl.pathname;
+  const authEnabled = isGoogleAuthConfigured({ forEdge: true });
 
   if (pathname.startsWith("/api/cron")) {
     if (cronAuthorized(req)) return NextResponse.next();
-    if (isGoogleAuthConfigured() && req.auth) return NextResponse.next();
+    if (authEnabled && req.auth) return NextResponse.next();
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const denied = networkOnlyGate(req);
   if (denied) return denied;
 
-  if (!isGoogleAuthConfigured()) {
+  if (!authEnabled) {
     return NextResponse.next();
   }
 

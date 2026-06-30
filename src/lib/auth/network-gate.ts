@@ -13,7 +13,12 @@ export function networkOnlyGate(request: NextRequest): NextResponse | null {
     return null;
   }
 
-  if (isGoogleAuthConfigured()) {
+  if (isGoogleAuthConfigured({ forEdge: true })) {
+    return null;
+  }
+
+  // Always allow sign-in routes — never block the login page behind network-only.
+  if (isPublicPath(request.nextUrl.pathname)) {
     return null;
   }
 
@@ -37,18 +42,11 @@ function denyNetwork(request: NextRequest): NextResponse {
   const acceptsHtml = request.headers.get("accept")?.includes("text/html");
 
   if (acceptsHtml) {
-    return new NextResponse(
-      `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Network only</title></head>
-<body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1.5rem;color:#27272a">
-<h1>finalREV PR — network only</h1>
-<p>Connect to office Wi‑Fi or sign in with Google once <code>GOOGLE_CLIENT_ID</code> is configured.</p>
-</body></html>`,
-      { status: 403, headers: { "Content-Type": "text/html; charset=utf-8" } },
-    );
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.json(
-    { error: "Forbidden", message: "Network-only access, or configure Google sign-in." },
+    { error: "Forbidden", message: "Sign in required." },
     { status: 403 },
   );
 }
