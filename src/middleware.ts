@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth/auth.config";
+import { isAuthConfigured } from "@/lib/auth/allowed-email";
 import {
   cronAuthorized,
   isPublicPath,
@@ -7,28 +8,12 @@ import {
 } from "@/lib/auth/network-gate";
 import { NextResponse } from "next/server";
 
-const { auth } = NextAuth({
-  ...authConfig,
-  secret: process.env.AUTH_SECRET,
-});
-
-/**
- * Next.js inlines env vars referenced in this file at build time.
- * VERCEL is always set on deploy — use it so production always requires sign-in.
- */
-function shouldRequireAuth(): boolean {
-  if (process.env.VERCEL === "1") {
-    return true;
-  }
-  return Boolean(
-    process.env.AUTH_SECRET?.trim() && process.env.GOOGLE_CLIENT_ID?.trim(),
-  );
-}
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { nextUrl } = req;
   const pathname = nextUrl.pathname;
-  const authRequired = shouldRequireAuth();
+  const authRequired = isAuthConfigured({ forEdge: true });
 
   if (pathname.startsWith("/api/cron")) {
     if (cronAuthorized(req)) return NextResponse.next();

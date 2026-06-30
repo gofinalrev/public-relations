@@ -1,10 +1,10 @@
 import { auth, signOut } from "@/lib/auth";
-import { isGoogleAuthConfigured } from "@/lib/auth/allowed-email";
+import { isAuthConfigured } from "@/lib/auth/allowed-email";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 
 export async function UserMenu() {
-  if (!isGoogleAuthConfigured()) return null;
+  if (!isAuthConfigured()) return null;
 
   const session = await auth();
   if (!session?.user) return null;

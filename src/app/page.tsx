@@ -29,7 +29,7 @@ import { TeamShareLink } from "@/components/dashboard/team-share-link";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SectionHeader } from "@/components/dashboard/section-header";
-import { isGoogleAuthConfigured } from "@/lib/auth/allowed-email";
+import { isAuthConfigured } from "@/lib/auth/allowed-email";
 import { isPostHogConfigured } from "@/lib/posthog/config";
 import { getIntegrationStatus, getIntegrationWarnings, getIntegrationOpsNotes } from "@/lib/integrations";
 import { OpsLogSink } from "@/components/dashboard/ops-log-sink";
@@ -44,6 +44,8 @@ import { loadOrBuildIntelligence } from "@/lib/intelligence/persist";
 import { postWarRoomAlert } from "@/lib/slack/weekly-digest";
 import { resolveTeamShareUrl, getSuggestedPinUrl, PRODUCTION_TEAM_URL } from "@/lib/team-url";
 import type { ActionItem } from "@/lib/action-items";
+import { WeeklyChecklist } from "@/components/dashboard/weekly-checklist";
+import { parsePostHighlights } from "@/lib/post-highlights";
 import { Play, MousePointerClick, Users, Crown } from "lucide-react";
 
 type PageProps = {
@@ -143,7 +145,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   }
 
-  const googleAuth = isGoogleAuthConfigured();
+  const authEnabled = isAuthConfigured();
+  const postsLogged = parsePostHighlights(report?.post_highlights_json).length;
 
   return (
     <>
@@ -158,7 +161,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {!googleAuth && (
+            {!authEnabled && (
               <TeamShareLink
                 share={share}
                 suggestedPin={suggestedPin}
@@ -188,9 +191,11 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             history={history}
             postHighlightsJson={report?.post_highlights_json}
             intelligence={intelligence}
+            postsLogged={postsLogged}
           />
         ) : activeView === "period" ? (
           <>
+            <WeeklyChecklist hasPdf={Boolean(pdfMeta)} postsLogged={postsLogged} />
             <PeriodScopeBanner context={periodContext} variant="compact" />
 
             <MetricoolPdfUpload

@@ -1,7 +1,14 @@
 import { signIn, auth } from "@/lib/auth";
-import { isGoogleAuthConfigured, getAllowedEmailDomains } from "@/lib/auth/allowed-email";
+import {
+  getAllowedEmailDomains,
+  isAuthConfigured,
+  isEmailAuthConfigured,
+  isGoogleAuthConfigured,
+} from "@/lib/auth/allowed-email";
 import { AuthBrand, AuthCard, AuthShell } from "@/components/auth/auth-shell";
 import { redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 type LoginPageProps = {
   searchParams: Promise<{ callbackUrl?: string; error?: string }>;
@@ -14,14 +21,21 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect(params.callbackUrl ?? "/");
   }
 
-  const configured =
-    isGoogleAuthConfigured() ||
-    Boolean(process.env.AUTH_SECRET?.trim() && process.env.GOOGLE_CLIENT_ID?.trim());
+  const googleReady = isGoogleAuthConfigured();
+  const emailReady = isEmailAuthConfigured();
+  const configured = isAuthConfigured();
   const domains = getAllowedEmailDomains().join(", @");
 
   async function signInWithGoogle() {
     "use server";
     await signIn("google", { redirectTo: params.callbackUrl ?? "/" });
+  }
+
+  async function signInWithEmail(formData: FormData) {
+    "use server";
+    const email = (formData.get("email") as string)?.trim();
+    if (!email) return;
+    await signIn("resend", { email, redirectTo: params.callbackUrl ?? "/" });
   }
 
   return (
@@ -34,18 +48,62 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </p>
         )}
 
+        {params.error === "Verification" && (
+          <p className="mb-5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+            Link expired or already used. Request a new one below.
+          </p>
+        )}
+
         {configured ? (
-          <form action={signInWithGoogle}>
-            <button
-              type="submit"
-              className="flex h-12 w-full items-center justify-center gap-2.5 rounded-lg border border-white/12 bg-white/[0.04] text-sm font-semibold text-white transition-all hover:border-primary/35 hover:bg-white/[0.07] hover:shadow-[0_0_28px_-6px_rgba(204,255,0,0.35)] active:scale-[0.99]"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-          </form>
+          <div className="space-y-4">
+            {googleReady && (
+              <form action={signInWithGoogle}>
+                <button
+                  type="submit"
+                  className="flex h-12 w-full items-center justify-center gap-2.5 rounded-lg border border-white/12 bg-white/[0.04] text-sm font-semibold text-white transition-all hover:border-primary/35 hover:bg-white/[0.07] hover:shadow-[0_0_28px_-6px_rgba(204,255,0,0.35)] active:scale-[0.99]"
+                >
+                  <GoogleIcon />
+                  Continue with Google
+                </button>
+              </form>
+            )}
+
+            {emailReady && (
+              <form action={signInWithEmail} className="space-y-3">
+                {googleReady && (
+                  <p className="text-center text-[11px] uppercase tracking-wider text-white/35">or</p>
+                )}
+                <label htmlFor="email" className="sr-only">
+                  Work email
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder={`you@${getAllowedEmailDomains()[0] ?? "finalrev.com"}`}
+                  className="flex h-11 w-full rounded-lg border border-white/12 bg-white/[0.04] px-3 text-sm text-white placeholder:text-white/35 focus:border-primary/40 focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  className="flex h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 active:scale-[0.99]"
+                >
+                  Email me a sign-in link
+                </button>
+                <p className="text-center text-[11px] text-white/40">
+                  One-time link to your @{domains} inbox. Check spam if needed.
+                </p>
+              </form>
+            )}
+          </div>
         ) : (
-          <p className="text-sm text-white/50">Sign-in unavailable.</p>
+          <div className="space-y-2 text-sm text-white/55">
+            <p>Sign-in is not configured on this server.</p>
+            <p className="text-xs text-white/40">
+              Production needs AUTH_SECRET plus RESEND_API_KEY or Google OAuth credentials in Vercel env.
+            </p>
+          </div>
         )}
       </AuthCard>
     </AuthShell>

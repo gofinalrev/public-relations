@@ -27,9 +27,9 @@ export function clientIpFromHeaders(forwardedFor: string | null, realIp: string 
 }
 
 export function isNetworkOnlyMode(): boolean {
+  if (process.env.VERCEL === "1") return false;
   if (process.env.ALLOW_PUBLIC_ACCESS === "true") return false;
   if (process.env.NETWORK_ONLY === "false") return false;
-  // Default: network-only (block public internet, including Vercel edge)
   return true;
 }
 

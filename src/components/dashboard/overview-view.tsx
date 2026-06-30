@@ -10,6 +10,8 @@ import { SectionHeader } from "@/components/dashboard/section-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { OverviewSummaryCard } from "@/components/dashboard/overview-summary-card";
+import { WeeklyChecklist } from "@/components/dashboard/weekly-checklist";
+import { parsePostHighlights } from "@/lib/post-highlights";
 import {
   Play,
   Users,
@@ -40,7 +42,8 @@ export function OverviewView({
   history,
   postHighlightsJson,
   intelligence,
-}: OverviewViewProps & { intelligence: WeeklyIntelligence }) {
+  postsLogged = 0,
+}: OverviewViewProps & { intelligence: WeeklyIntelligence; postsLogged?: number }) {
   const periodLink =
     weekStart !== context.weekKey ? `/?view=period&week=${weekStart}` : "/?view=period";
   const cadUploads = summary.finalrevCadUploads ?? 0;
@@ -79,6 +82,8 @@ export function OverviewView({
           </div>
         )}
       </div>
+
+      <WeeklyChecklist hasPdf={Boolean(pdfMeta)} postsLogged={postsLogged || parsePostHighlights(postHighlightsJson).length} />
 
       {!hasData && (
         <Card className="border-dashed border-foreground/15 bg-muted/20">

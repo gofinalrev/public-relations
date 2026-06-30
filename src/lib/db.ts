@@ -91,6 +91,15 @@ async function ensureReady(): Promise<void> {
   await ready;
 }
 
+/** Used by auth adapter — same Turso/SQLite client as the dashboard. */
+export async function ensureDbReady(): Promise<void> {
+  await ensureReady();
+}
+
+export function getDbClient(): Client {
+  return getClient();
+}
+
 function rowVal(row: Record<string, unknown>, key: string): unknown {
   return row[key] ?? row[key.toLowerCase()];
 }
@@ -180,6 +189,18 @@ async function initSchema(): Promise<void> {
       period_label TEXT NOT NULL DEFAULT '',
       file_data BLOB NOT NULL,
       uploaded_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
+    `CREATE TABLE IF NOT EXISTS auth_users (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      name TEXT,
+      image TEXT,
+      email_verified TEXT
+    )`,
+    `CREATE TABLE IF NOT EXISTS auth_verification_tokens (
+      identifier TEXT PRIMARY KEY,
+      token TEXT NOT NULL,
+      expires TEXT NOT NULL
     )`,
   ]);
   await migrateSchema(db);
