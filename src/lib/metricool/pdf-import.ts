@@ -1,0 +1,194 @@
+import { parseMetricoolPdfBuffer } from "@/lib/metricool/pdf-parser";
+import { analyzeGrowthFunnel, buildCombinedLearning, formatGrowthInsights } from "@/lib/metricool/insights";
+import {
+  upsertMetricoolSync,
+  upsertPostHogSync,
+  getWeeklyReport,
+  getAllChannels,
+  saveMetricoolPdf,
+} from "@/lib/db";
+import { isPostHogConfigured } from "@/lib/posthog/config";
+import { fetchWeeklyPostHogMetrics, fetchPostHogMetricsForPeriod } from "@/lib/posthog/metrics";
+import { analyzePostHogWeek, formatInsightsForStorage } from "@/lib/posthog/insights";
+import { getPreviousWeekKey } from "@/lib/weeks";
+import { SOCIAL_PLATFORM_SLUGS } from "@/lib/platforms";
+import { buildActionItems } from "@/lib/action-items";
+import { fetchFinalRevCadUploadsForPeriod, fetchFinalRevCadUploadsForWeek } from "@/lib/posthog/finalrev-metrics";
+import { syncFreeChannelStats } from "@/lib/social/sync";
+import { buildDashboardPeriodContext } from "@/lib/period-context";
+import { postWeeklyDigest } from "@/lib/slack/weekly-digest";
+import fs from "fs";
+import path from "path";
+import type { WeeklyReport } from "@/lib/db";
+
+const REPORTS_DIR = path.join(process.cwd(), "data", "reports");
+
+function localReportsBackup(weekStart: string, filename: string, buffer: Buffer) {
+  if (process.env.VERCEL) return;
+  try {
+    if (!fs.existsSync(REPORTS_DIR)) {
+      fs.mkdirSync(REPORTS_DIR, { recursive: true });
+    }
+    fs.writeFileSync(path.join(REPORTS_DIR, `${weekStart}-${filename}`), buffer);
+  } catch {
+    // Local backup is best-effort only
+  }
+}
+
+async function redditSetupNeeded(): Promise<boolean> {
+  const reddit = (await getAllChannels()).find((c) => c.slug === "reddit");
+  return reddit?.status === "setup_needed";
+}
+
+export type MetricoolPdfImportResult =
+  | {
+      ok: true;
+      weekStart: string;
+      periodLabel: string;
+      filename: string;
+      views: number;
+      engagement: number;
+      report: WeeklyReport;
+    }
+  | { ok: false; error: string };
+
+export async function importMetricoolPdfBuffer(
+  buffer: Buffer,
+  filename: string,
+  weekOverride?: string | null,
+): Promise<MetricoolPdfImportResult> {
+  try {
+    const parsed = await parseMetricoolPdfBuffer(buffer, filename);
+    const weekStart = weekOverride || parsed.weekStart;
+
+    await saveMetricoolPdf({
+      weekStart,
+      filename: parsed.sourceFilename || filename,
+      fileData: buffer,
+      periodLabel: parsed.periodLabel,
+    });
+
+    localReportsBackup(weekStart, parsed.sourceFilename || filename, buffer);
+
+    const breakdown = {
+      ...parsed.metrics,
+      periodLabel: parsed.periodLabel,
+      periodStart: parsed.periodStart,
+      periodEnd: parsed.periodEnd,
+      periodDays: parsed.periodDays,
+      source: "pdf",
+      sourceFilename: parsed.sourceFilename,
+      parsedAt: new Date().toISOString(),
+      extras: parsed.extras,
+    };
+
+    let posthogMetrics = null;
+    if (isPostHogConfigured()) {
+      posthogMetrics =
+        parsed.periodDays > 7
+          ? await fetchPostHogMetricsForPeriod(parsed.periodStart, parsed.periodEnd, weekStart).catch(
+              () => null,
+            )
+          : await fetchWeeklyPostHogMetrics(weekStart).catch(() => null);
+    }
+
+    const prevReport = await getWeeklyReport(getPreviousWeekKey(weekStart));
+    const previousMetricool = prevReport?.metricool_breakdown_json
+      ? JSON.parse(prevReport.metricool_breakdown_json)
+      : null;
+
+    const analysisContext = {
+      periodDays: parsed.periodDays,
+      periodLabel: parsed.periodLabel,
+      redditSetupNeeded: await redditSetupNeeded(),
+    };
+
+    const growthInsights = analyzeGrowthFunnel(
+      parsed.metrics,
+      posthogMetrics,
+      previousMetricool,
+      analysisContext,
+    );
+
+    const combinedLearning = buildCombinedLearning(parsed.metrics, posthogMetrics, analysisContext);
+
+    const channelUpdates = SOCIAL_PLATFORM_SLUGS.map((slug) => ({
+      slug,
+      current_value: parsed.metrics.platforms.find((p) => p.platform === slug)?.followers ?? 0,
+    }));
+
+    const actionItemsJson = JSON.stringify(
+      buildActionItems(
+        growthInsights,
+        posthogMetrics ? analyzePostHogWeek(posthogMetrics, null, prevReport, null).insights : [],
+        undefined,
+      ),
+    );
+
+    let report = await upsertMetricoolSync(weekStart, {
+      videoViews: parsed.metrics.totalVideoViews,
+      engagement: parsed.metrics.totalEngagement,
+      breakdownJson: JSON.stringify(breakdown),
+      growthInsights: formatGrowthInsights(growthInsights),
+      channelUpdates,
+      learning: combinedLearning || undefined,
+      actionItemsJson,
+    });
+
+    await syncFreeChannelStats();
+
+    if (posthogMetrics) {
+      const posthogAnalysis = analyzePostHogWeek(posthogMetrics, null, prevReport, report);
+
+      let finalRevUploads = 0;
+      if (posthogMetrics.periodStart && posthogMetrics.periodEnd) {
+        finalRevUploads = await fetchFinalRevCadUploadsForPeriod(
+          posthogMetrics.periodStart,
+          posthogMetrics.periodEnd,
+          `${posthogMetrics.periodStart}_${posthogMetrics.periodEnd}`,
+        );
+      } else {
+        finalRevUploads = await fetchFinalRevCadUploadsForWeek(weekStart);
+      }
+
+      report = await upsertPostHogSync(weekStart, {
+        visitors: posthogMetrics.uniqueVisitors,
+        subscriptions: posthogMetrics.newSubscriptions,
+        insights: formatInsightsForStorage(posthogAnalysis),
+        funnelJson: JSON.stringify({
+          funnel: posthogMetrics.funnel,
+          topReferrers: posthogMetrics.topReferrers,
+          subscriptionEventUsed: posthogMetrics.subscriptionEventUsed,
+          finalrevCadUploads: finalRevUploads,
+          periodStart: posthogMetrics.periodStart,
+          periodEnd: posthogMetrics.periodEnd,
+          fetchedAt: posthogMetrics.fetchedAt,
+          analysis: {
+            conversionRate: posthogAnalysis.conversionRate,
+            activationRate: posthogAnalysis.activationRate,
+            suggestedFindings: posthogAnalysis.suggestedFindings,
+          },
+        }),
+        learning: posthogAnalysis.suggestedLearning || undefined,
+      });
+    }
+
+    const context = buildDashboardPeriodContext(weekStart, report);
+    await postWeeklyDigest({ weekStart, report, context, source: "pdf" });
+
+    return {
+      ok: true,
+      weekStart,
+      periodLabel: parsed.periodLabel,
+      filename: parsed.sourceFilename || filename,
+      views: parsed.metrics.totalVideoViews,
+      engagement: parsed.metrics.totalEngagement,
+      report,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Failed to parse PDF",
+    };
+  }
+}

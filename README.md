@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# finalREV PR Dashboard
 
-## Getting Started
+Internal dashboard for weekly social metrics, Tooltrace funnel data, and PR tooling (captions, copy, assets).
 
-First, run the development server:
+**Production:** [pr.finalrev.com](https://pr.finalrev.com) (finalrev Vercel team)  
+**Access:** Google Sign-In — `@finalrev.com` only
+
+## Quick start (local)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # fill in keys (see below)
+npm install
+npm run dev                    # http://localhost:8787
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy `.env.example` → `.env.local`. Required for a full experience:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Purpose |
+|----------|---------|
+| `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Team login (@finalrev.com) |
+| `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Shared weekly data |
+| `POSTHOG_PERSONAL_API_KEY`, `POSTHOG_*` | Tooltrace + finalREV analytics |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Caption Studio |
+| `RESEND_API_KEY` | Monday weekly email brief |
 
-## Learn More
+Optional: Stripe (Pro subs), Metricool API, YouTube API, Slack webhook, `CRON_SECRET`.
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Dev server on port 8787 (LAN-friendly) |
+| `npm run build` | Production build |
+| `npm run deploy` | Build + deploy to Vercel (finalrev team) |
+| `npm run team:serve` | Build + serve on LAN (no Vercel) |
+| `npm run cron:weekly` | Monday sync + email (host Mac crontab) |
+| `npm run import-pdf` | Import a Metricool PDF from CLI |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project layout
 
-## Deploy on Vercel
+```
+src/
+  app/           # Next.js routes, server actions, API
+  components/    # Dashboard UI
+  lib/           # DB, integrations (PostHog, Metricool, Gemini, auth)
+scripts/         # Deploy, Turso setup, PDF import, weekly cron
+public/          # Logos and brand assets
+data/            # Local SQLite fallback (gitignored); production uses Turso
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Linked to **finalrev/social-media** on Vercel. Deploy:
+
+```bash
+npm run deploy
+```
+
+Pull production env locally:
+
+```bash
+npx vercel env pull .env.vercel --scope finalrev
+```
+
+## Weekly ops
+
+1. Julian imports Metricool PDF (Details tab) or runs `npm run import-pdf`
+2. PostHog syncs on page load
+3. Monday 9am PT: `scripts/local-weekly-sync.sh` (or `npm run cron:weekly`) sends the email brief
