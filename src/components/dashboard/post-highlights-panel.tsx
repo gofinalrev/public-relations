@@ -15,16 +15,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { PlatformLogo } from "@/components/dashboard/platform-logo";
-import { formatNumber } from "@/lib/utils";
-import { Clapperboard, Plus, Loader2, TrendingUp } from "lucide-react";
+import { resolvePostUrl } from "@/lib/post-url";
+import { formatNumber, cn } from "@/lib/utils";
+import { Clapperboard, Plus, Loader2, TrendingUp, ExternalLink } from "lucide-react";
+
+import type { PostAutopsy } from "@/lib/intelligence/types";
 
 type PostHighlightsPanelProps = {
   weekStart: string;
   postHighlightsJson: string | null | undefined;
   compact?: boolean;
+  autopsies?: PostAutopsy[];
 };
 
-export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact }: PostHighlightsPanelProps) {
+export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact, autopsies = [] }: PostHighlightsPanelProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
@@ -39,6 +43,9 @@ export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact }: 
     const publishedAt = (formData.get("publishedAt") as string)?.trim() || undefined;
     const format = (formData.get("format") as PostHighlight["format"]) || undefined;
     const groupId = (formData.get("groupId") as string)?.trim() || undefined;
+    const url = (formData.get("url") as string)?.trim() || undefined;
+    const experiment = (formData.get("experiment") as string)?.trim() || undefined;
+    const product = (formData.get("product") as PostHighlight["product"]) || "finalrev";
 
     if (!title || !platform || !Number.isFinite(views)) return;
 
@@ -50,8 +57,10 @@ export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact }: 
       views,
       likes,
       publishedAt,
-      product: "finalrev",
+      product,
       groupId: groupId || undefined,
+      url,
+      experiment,
     };
 
     startTransition(async () => {
@@ -72,7 +81,7 @@ export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact }: 
         </CardTitle>
         {!compact && (
           <CardDescription>
-            Manual stats from native apps — fills gaps Metricool misses until the weekly PDF lands
+            Manual entry from YouTube Studio / IG Insights. Tag product: finalREV (default) or Tooltrace when clips target that brand.
           </CardDescription>
         )}
       </CardHeader>
@@ -82,42 +91,16 @@ export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact }: 
             {[...posts]
               .sort((a, b) => b.views - a.views)
               .map((post) => (
-                <li
+                <PostHighlightRow
                   key={post.id}
-                  className="flex items-start gap-3 border border-foreground/[0.08] bg-muted/20 p-3"
-                >
-                  <PlatformLogo platformOrSlug={post.platform} size={compact ? "sm" : "md"} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <p className="text-sm font-semibold">{post.title}</p>
-                      {!compact && post.format && (
-                        <Badge variant="outline" className="text-[9px] font-normal capitalize">
-                          {post.format}
-                        </Badge>
-                      )}
-                      {!compact && post.product && (
-                        <Badge variant="secondary" className="text-[9px] font-normal capitalize">
-                          {post.product}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {platformLabel(post.platform)} · {formatNumber(post.views)} views
-                      {!compact && ` · ${post.likes} likes`}
-                      {!compact && post.publishedAt ? ` · ${post.publishedAt}` : ""}
-                    </p>
-                    {!compact && post.notes && (
-                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{post.notes}</p>
-                    )}
-                  </div>
-                  {!compact && (
-                    <p className="text-lg font-bold tabular-nums text-primary">{formatNumber(post.views)}</p>
-                  )}
-                </li>
+                  post={post}
+                  compact={compact}
+                  autopsy={autopsies.find((a) => a.postId === post.id)}
+                />
               ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">No posts logged yet — add stats from YouTube Studio or IG Insights.</p>
+          <p className="text-sm text-muted-foreground">No posts logged. Add stats from YouTube Studio or IG Insights.</p>
         )}
 
         {insights.length > 0 && !compact && (
@@ -168,6 +151,19 @@ export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact }: 
                   </select>
                 </div>
                 <div className="space-y-1">
+                  <Label htmlFor="product">Product</Label>
+                  <select
+                    id="product"
+                    name="product"
+                    defaultValue="finalrev"
+                    className="flex h-10 w-full border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="finalrev">finalREV (shop-floor)</option>
+                    <option value="tooltrace">Tooltrace</option>
+                    <option value="both">Both</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
                   <Label htmlFor="views">Views</Label>
                   <Input id="views" name="views" type="number" min={0} required />
                 </div>
@@ -182,6 +178,19 @@ export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact }: 
                 <div className="space-y-1">
                   <Label htmlFor="groupId">Cross-post group (optional)</Label>
                   <Input id="groupId" name="groupId" placeholder="robots-short" />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="experiment">Experiment tag (optional)</Label>
+                  <Input id="experiment" name="experiment" placeholder="Pinned finalrev.com/quote in comment" />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="url">Post URL (optional)</Label>
+                  <Input
+                    id="url"
+                    name="url"
+                    type="url"
+                    placeholder="https://youtube.com/shorts/..."
+                  />
                 </div>
                 <div className="flex gap-2 sm:col-span-2">
                   <Button type="submit" disabled={pending}>
@@ -204,4 +213,92 @@ export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact }: 
       </CardContent>
     </Card>
   );
+}
+
+function PostHighlightRow({
+  post,
+  compact,
+  autopsy,
+}: {
+  post: PostHighlight;
+  compact?: boolean;
+  autopsy?: PostAutopsy;
+}) {
+  const url = resolvePostUrl(post);
+  const rowClass = cn(
+    "flex items-start gap-3 border border-foreground/[0.08] bg-muted/20 p-3 transition-colors",
+    url && "group cursor-pointer hover:border-primary/25 hover:bg-muted/35",
+  );
+
+  const inner = (
+    <>
+      <PlatformLogo platformOrSlug={post.platform} size={compact ? "sm" : "md"} />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="text-sm font-semibold group-hover:text-primary">{post.title}</p>
+          {!compact && post.format && (
+            <Badge variant="outline" className="text-[9px] font-normal capitalize">
+              {post.format}
+            </Badge>
+          )}
+          {!compact && post.product && (
+            <Badge variant="secondary" className="text-[9px] font-normal capitalize">
+              {post.product}
+            </Badge>
+          )}
+          {post.experiment && (
+            <Badge variant="outline" className="text-[9px] font-normal">
+              exp
+            </Badge>
+          )}
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {platformLabel(post.platform)} · {formatNumber(post.views)} views
+          {!compact && ` · ${post.likes} likes`}
+          {!compact && post.publishedAt ? ` · ${post.publishedAt}` : ""}
+        </p>
+        {!compact && post.notes && (
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{post.notes}</p>
+        )}
+        {!compact && autopsy && (
+          <div className="mt-2 border-l-2 border-amber-500/50 pl-2 text-[11px]">
+            <p className="font-medium text-amber-700 dark:text-amber-400">Possible reasons</p>
+            <ul className="mt-0.5 list-disc pl-4 text-muted-foreground">
+              {autopsy.reasons.slice(0, 2).map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+            <p className="mt-1 text-primary">{autopsy.fixes[0]}</p>
+          </div>
+        )}
+      </div>
+      {!compact && (
+        <p className="text-lg font-bold tabular-nums text-primary">{formatNumber(post.views)}</p>
+      )}
+      {url && (
+        <ExternalLink
+          className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-70"
+          aria-hidden
+        />
+      )}
+    </>
+  );
+
+  if (url) {
+    return (
+      <li>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={rowClass}
+          title={`Open on ${platformLabel(post.platform)}`}
+        >
+          {inner}
+        </a>
+      </li>
+    );
+  }
+
+  return <li className={rowClass}>{inner}</li>;
 }

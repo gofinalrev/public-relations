@@ -3,6 +3,8 @@ import type { DashboardPeriodContext } from "@/lib/period-context";
 import { parseStoredInsights } from "@/lib/action-items";
 import { formatNumber } from "@/lib/utils";
 import { PRODUCTION_TEAM_URL } from "@/lib/team-url";
+import { parseIntelligenceJson } from "@/lib/intelligence/build";
+import { formatWarRoomSlack } from "@/lib/intelligence/war-room";
 
 type DigestInput = {
   weekStart: string;
@@ -18,7 +20,7 @@ function topInsight(report: WeeklyReport): string | null {
     (i) => i.type === "critical" || i.type === "warning" || i.type === "success",
   );
   if (!top) return null;
-  return `${top.title} — ${top.body.slice(0, 120)}${top.body.length > 120 ? "…" : ""}`;
+  return `${top.title}: ${top.body.slice(0, 120)}${top.body.length > 120 ? "…" : ""}`;
 }
 
 function openActionCount(report: WeeklyReport): number {
@@ -34,6 +36,7 @@ export function buildWeeklyDigestText({ report, context, source }: DigestInput):
   const insight = topInsight(report);
   const actions = openActionCount(report);
   const hub = process.env.APP_PUBLIC_URL?.trim() || PRODUCTION_TEAM_URL;
+  const intel = parseIntelligenceJson(report.intelligence_json);
   const src =
     source === "pdf" ? "Metricool PDF imported" : source === "cron" ? "Weekly auto-sync" : "Metricool API sync";
 
@@ -41,14 +44,33 @@ export function buildWeeklyDigestText({ report, context, source }: DigestInput):
     `*finalREV PR · ${context.activityLabel}*`,
     `_${src}_`,
     "",
+    intel?.contentPnl.headline ? `_${intel.contentPnl.headline}_` : "",
     `Video views: *${formatNumber(report.metricool_video_views)}* · Engagement: *${formatNumber(report.metricool_engagement)}*`,
     `Tooltrace visitors: *${formatNumber(report.posthog_visitors)}* · Pro subs: *${formatNumber(report.posthog_subscriptions)}*`,
+    intel?.prescription.doFirst ? `\n*Priority:* ${intel.prescription.doFirst}` : "",
     insight ? `\nTop insight: ${insight}` : "",
     actions > 0 ? `\n${actions} open action item${actions === 1 ? "" : "s"} in the hub.` : "",
-    `\n<${hub}|Open PR Command Center>`,
+    `\n<${hub}|Open PR Hub>`,
   ].filter(Boolean);
 
   return lines.join("\n");
+}
+
+export async function postWarRoomAlert(report: WeeklyReport, hubUrl: string): Promise<boolean> {
+  const intel = parseIntelligenceJson(report.intelligence_json);
+  if (!intel?.warRoom?.active) return false;
+  const webhook = process.env.SLACK_WEBHOOK_URL?.trim();
+  if (!webhook) return false;
+  try {
+    const response = await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: formatWarRoomSlack(intel.warRoom, hubUrl) }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 export async function postWeeklyDigest(input: DigestInput): Promise<boolean> {

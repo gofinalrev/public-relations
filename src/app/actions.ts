@@ -33,6 +33,7 @@ export async function saveWeeklyReport(formData: FormData) {
     action_items_json: existing?.action_items_json ?? "[]",
     caption_studio_json: existing?.caption_studio_json ?? "{}",
     post_highlights_json: existing?.post_highlights_json ?? "{}",
+    intelligence_json: existing?.intelligence_json ?? "",
   });
 
   revalidatePath("/");

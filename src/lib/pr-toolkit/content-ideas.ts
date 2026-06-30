@@ -53,7 +53,7 @@ export function buildPrContentIdeas(
       ideas.push({
         id: "double-down-platform",
         priority: "high",
-        title: `Double down on ${top.name}`,
+        title: `Increase output on ${top.name}`,
         body: `${formatNumber(top.videoViews)} views in ${context.activityLabel}. Repurpose the top hook on ${top.name} to other platforms.`,
         platforms: [top.platform],
       });

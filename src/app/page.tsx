@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getDashboardData, getAppSetting, getMetricoolPdfMeta, listMetricoolPdfMetas } from "@/lib/db";
+import { getDashboardData, getAppSetting, getMetricoolPdfMeta, listMetricoolPdfMetas, setAppSetting } from "@/lib/db";
 import { getCurrentWeekKey } from "@/lib/weeks";
 import { buildDashboardPeriodContext } from "@/lib/period-context";
 import { analyzeHistory } from "@/lib/history-analytics";
@@ -31,15 +31,18 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { isGoogleAuthConfigured } from "@/lib/auth/allowed-email";
 import { isPostHogConfigured } from "@/lib/posthog/config";
-import { getIntegrationStatus, getIntegrationWarnings } from "@/lib/integrations";
-import { isStripeConfigured } from "@/lib/stripe/config";
+import { getIntegrationStatus, getIntegrationWarnings, getIntegrationOpsNotes } from "@/lib/integrations";
+import { OpsLogSink } from "@/components/dashboard/ops-log-sink";
+import { executiveSubsLabel, logOps } from "@/lib/ops-log";
 import { isGeminiConfigured } from "@/lib/gemini/config";
-import { isYouTubeConfigured } from "@/lib/social/youtube";
+import { buildCaptionWeekContext } from "@/lib/gemini/caption-prompt";
 import { isMetricoolConfigured } from "@/lib/metricool/config";
 import { syncPostHogForWeek } from "@/app/posthog-actions";
 import { syncMetricoolForWeek } from "@/app/metricool-actions";
 import { syncSocialChannels } from "@/app/social-sync-actions";
-import { resolveTeamShareUrl, getSuggestedPinUrl } from "@/lib/team-url";
+import { loadOrBuildIntelligence } from "@/lib/intelligence/persist";
+import { postWarRoomAlert } from "@/lib/slack/weekly-digest";
+import { resolveTeamShareUrl, getSuggestedPinUrl, PRODUCTION_TEAM_URL } from "@/lib/team-url";
 import type { ActionItem } from "@/lib/action-items";
 import { Play, MousePointerClick, Users, Crown } from "lucide-react";
 
@@ -115,23 +118,36 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const integrationStatus = getIntegrationStatus(report);
   const integrationWarnings = getIntegrationWarnings(integrationStatus);
-  const overviewSummary = buildOverviewSummary(report, channels, metrics);
-  const googleAuth = isGoogleAuthConfigured();
+  const integrationOpsNotes = getIntegrationOpsNotes(integrationStatus);
+  for (const note of integrationOpsNotes) {
+    logOps(note);
+  }
+  const overviewSummary = buildOverviewSummary(report, channels, metrics, prev);
+  const intelligence = await loadOrBuildIntelligence({
+    weekStart,
+    report,
+    previousReport: previousWeek,
+    history,
+    channels,
+    context: periodContext,
+  });
 
-  let subsSource = "Stripe / PostHog";
-  if (!isStripeConfigured()) {
-    subsSource = "Stripe off · subs may read 0";
-  } else if (report?.posthog_funnel_json) {
-    try {
-      const funnel = JSON.parse(report.posthog_funnel_json) as { subscriptionEventUsed?: string };
-      if (funnel.subscriptionEventUsed) subsSource = funnel.subscriptionEventUsed;
-    } catch {
-      /* ignore */
+  if (intelligence.warRoom?.active && report) {
+    const warKey = `war_room_sent_${weekStart}`;
+    const already = await getAppSetting(warKey);
+    if (!already) {
+      const hub = process.env.APP_PUBLIC_URL?.trim() || PRODUCTION_TEAM_URL;
+      if (await postWarRoomAlert({ ...report, intelligence_json: JSON.stringify(intelligence) }, hub)) {
+        await setAppSetting(warKey, new Date().toISOString());
+      }
     }
   }
 
+  const googleAuth = isGoogleAuthConfigured();
+
   return (
     <>
+      <OpsLogSink messages={integrationOpsNotes} />
       <header className="sticky top-0 z-30 border-b border-foreground/[0.06] bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto max-w-6xl px-3 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-3">
@@ -171,6 +187,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             prev={prev}
             history={history}
             postHighlightsJson={report?.post_highlights_json}
+            intelligence={intelligence}
           />
         ) : activeView === "period" ? (
           <>
@@ -236,7 +253,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 />
                 <MetricCard
                   label="Pro subscriptions"
-                  sublabel={subsSource}
+                  sublabel={executiveSubsLabel()}
                   value={metrics.subs}
                   previous={periodContext.showWeekOverWeek ? (prev?.subs ?? null) : null}
                   highlight
@@ -264,6 +281,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             <PostHighlightsPanel
               weekStart={weekStart}
               postHighlightsJson={report?.post_highlights_json}
+              autopsies={intelligence.autopsies}
             />
 
             <section>
@@ -273,12 +291,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
             <section>
               <SectionHeader title="Channel goals" />
-              <ChannelGoals
-                channels={channels}
-                report={report}
-                periodContext={periodContext}
-                youtubeApiEnabled={isYouTubeConfigured()}
-              />
+              <ChannelGoals channels={channels} report={report} periodContext={periodContext} />
             </section>
 
             <section>
@@ -303,6 +316,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               channels={channels}
               context={periodContext}
               geminiConfigured={isGeminiConfigured()}
+              intelligence={intelligence}
+              weekContextSummary={buildCaptionWeekContext(report, channels, periodContext).summary}
             />
           </>
         ) : (

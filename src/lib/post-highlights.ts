@@ -14,9 +14,13 @@ export type PostHighlight = {
   /** ISO date YYYY-MM-DD */
   publishedAt?: string;
   product?: PostHighlightProduct;
+  /** Direct link to the post on the native platform */
+  url?: string;
   notes?: string;
   /** Links cross-posts, e.g. same short on YT + IG */
   groupId?: string;
+  /** A/B tag e.g. "Pinned tooltrace link in comment" */
+  experiment?: string;
 };
 
 export type PostHighlightInsight = {
@@ -84,7 +88,7 @@ export function analyzePostHighlights(posts: PostHighlight[]): PostHighlightInsi
       insights.push({
         type: "info",
         title: "Cross-platform gap on same clip",
-        body: `"${best.title}" — ${formatNumber(best.views)} on ${platformLabel(best.platform)} vs ${rest.map((p) => `${formatNumber(p.views)} on ${platformLabel(p.platform)}`).join(", ")}. Lead with the winning platform, then adapt hook/caption for the laggard.`,
+        body: `"${best.title}": ${formatNumber(best.views)} on ${platformLabel(best.platform)} vs ${rest.map((p) => `${formatNumber(p.views)} on ${platformLabel(p.platform)}`).join(", ")}. Post on winning platform first, then adapt for others.`,
       });
     }
   }
@@ -98,7 +102,7 @@ export function analyzePostHighlights(posts: PostHighlight[]): PostHighlightInsi
       insights.push({
         type: "success",
         title: "Best IG Reel engagement",
-        body: `"${bestEng.title}" — ${rate.toFixed(1)}% like rate (${bestEng.likes}/${formatNumber(bestEng.views)}). Reuse this hook style on shop-floor reels.`,
+        body: `"${bestEng.title}": ${rate.toFixed(1)}% like rate (${bestEng.likes}/${formatNumber(bestEng.views)}).`,
       });
     }
     const weakest = [...igReels].sort((a, b) => a.views - b.views)[0];
@@ -106,7 +110,7 @@ export function analyzePostHighlights(posts: PostHighlight[]): PostHighlightInsi
       insights.push({
         type: "warning",
         title: "IG reel underperformed",
-        body: `"${weakest.title}" — ${formatNumber(weakest.views)} views. Person/machine intros may need a stronger first frame or text hook before the payoff.`,
+        body: `"${weakest.title}": ${formatNumber(weakest.views)} views. Intro may need stronger opening frame or text hook.`,
       });
     }
   }
@@ -119,7 +123,7 @@ export function analyzePostHighlights(posts: PostHighlight[]): PostHighlightInsi
       insights.push({
         type: "info",
         title: "YouTube Shorts outpacing IG Reels",
-        body: `${formatNumber(ytTotal)} Short views vs ${formatNumber(igTotal)} Reel views this week. Shop-floor CNC content may be finding audience on YouTube first — prioritize Shorts upload, then repurpose with IG-native cover text.`,
+        body: `${formatNumber(ytTotal)} Short views vs ${formatNumber(igTotal)} Reel views this period. YouTube Short views exceed IG Reels.`,
       });
     }
   }
@@ -131,8 +135,8 @@ export function analyzePostHighlights(posts: PostHighlight[]): PostHighlightInsi
   if (recent.length > 0) {
     insights.push({
       type: "success",
-      title: "Fresh momentum",
-      body: `${recent.map((p) => `"${p.title}" (${formatNumber(p.views)})`).join(" · ")} — still climbing. Pin comment with finalrev.com/quote or tooltrace CTA while traffic is warm.`,
+      title: "Recent post performance",
+      body: `${recent.map((p) => `"${p.title}" (${formatNumber(p.views)})`).join(" · ")}. Published ≤3 days ago. Add finalrev.com/quote or Tooltrace link only when the clip targets that product.`,
     });
   }
 

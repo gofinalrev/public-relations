@@ -26,9 +26,9 @@ export function PlatformMomentumPanel({ history, currentWeekKey }: PlatformMomen
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Share2 className="size-5 text-primary-700" />
-            Platform momentum
+            Platform totals (historical)
           </CardTitle>
-          <CardDescription>Aggregated from logged weekly PDFs — shows where video views stack over time.</CardDescription>
+          <CardDescription>Sum of video views from imported PDFs by platform.</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">No platform breakdown history yet. Import Metricool PDFs each week to build this view.</p>
@@ -44,10 +44,10 @@ export function PlatformMomentumPanel({ history, currentWeekKey }: PlatformMomen
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Share2 className="size-5 text-primary-700" />
-          Platform momentum
+          Platform totals (historical)
         </CardTitle>
         <CardDescription>
-          Sum of video views across {analytics.weeksRecorded} logged weeks — zoomed-out view of which channels carry reach.
+          Total views by channel across {analytics.weeksRecorded} logged weeks.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

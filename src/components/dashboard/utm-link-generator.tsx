@@ -29,7 +29,7 @@ export function UtmLinkGenerator({ weekStart }: UtmLinkGeneratorProps) {
           UTM links for bios & descriptions
         </CardTitle>
         <CardDescription>
-          Copy into each platform bio so PostHog can attribute traffic — fixes most &quot;direct&quot; visits
+          Copy into each platform bio so PostHog can attribute traffic (reduces &quot;direct&quot; visits).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">

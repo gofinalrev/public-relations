@@ -1,6 +1,15 @@
 import type { WeeklyReport, Channel, MetricoolPdfMeta } from "@/lib/db";
 import type { DashboardPeriodContext } from "@/lib/period-context";
 import { parseStoredInsights } from "@/lib/action-items";
+import { filterExecutiveInsights } from "@/lib/ops-log";
+import { formatNumber } from "@/lib/utils";
+
+export type SummaryProduct = "social" | "tooltrace" | "finalrev";
+
+export type SummaryLine = {
+  product: SummaryProduct;
+  text: string;
+};
 
 export type OverviewEfficiency = {
   tooltraceConversionPct: number | null;
@@ -12,11 +21,12 @@ export type OverviewMilestone = {
   label: string;
   value: string;
   detail?: string;
-  product: "tooltrace" | "finalrev" | "social";
+  product: SummaryProduct;
 };
 
 export type OverviewSummary = {
-  headline: string | null;
+  summaryLines: SummaryLine[];
+  teamNote: string | null;
   headlineType: "learning" | "success" | "warning" | "critical" | "info" | null;
   efficiency: OverviewEfficiency;
   tooltraceMilestones: OverviewMilestone[];
@@ -26,29 +36,40 @@ export type OverviewSummary = {
   finalrevCadUploads: number | null;
 };
 
-function pickHeadline(report: WeeklyReport | null): Pick<OverviewSummary, "headline" | "headlineType"> {
-  const learning = report?.learning?.trim();
-  if (learning) {
-    return { headline: learning, headlineType: "learning" };
-  }
+const PRODUCT_LABELS: Record<SummaryProduct, string> = {
+  social: "Social",
+  tooltrace: "Tooltrace",
+  finalrev: "finalREV",
+};
 
-  const growth = parseStoredInsights(report?.growth_insights ?? "");
-  const posthog = parseStoredInsights(report?.posthog_insights ?? "");
+export function summaryProductLabel(product: SummaryProduct): string {
+  return PRODUCT_LABELS[product];
+}
+
+function cleanReferrerDomain(domain: string): string {
+  return domain
+    .replace(/^\$/, "")
+    .replace(/^www\./i, "")
+    .toLowerCase();
+}
+
+function periodDeltaPhrase(current: number, previous: number | null | undefined): string | null {
+  if (previous === null || previous === undefined) return null;
+  const delta = current - previous;
+  if (delta === 0) return null;
+  return `${delta > 0 ? "up" : "down"} ${formatNumber(Math.abs(delta))} vs last period`;
+}
+
+function pickHeadlineType(report: WeeklyReport | null): OverviewSummary["headlineType"] {
+  const growth = filterExecutiveInsights(parseStoredInsights(report?.growth_insights ?? ""));
+  const posthog = filterExecutiveInsights(parseStoredInsights(report?.posthog_insights ?? ""));
   const ranked = [...growth, ...posthog].filter((i) => i.type !== "info");
-  const priority = ["success", "critical", "warning", "info"] as const;
+  const priority = ["critical", "warning", "success", "info"] as const;
   for (const type of priority) {
-    const match = ranked.find((i) => i.type === type);
-    if (match) {
-      return { headline: match.body, headlineType: type };
-    }
+    if (ranked.some((i) => i.type === type)) return type;
   }
-
-  const info = growth[0] ?? posthog[0];
-  if (info) {
-    return { headline: info.body, headlineType: "info" };
-  }
-
-  return { headline: null, headlineType: null };
+  if (report?.learning?.trim()) return "learning";
+  return ranked[0]?.type as OverviewSummary["headlineType"] ?? null;
 }
 
 function parseFunnelAnalysis(report: WeeklyReport | null) {
@@ -64,14 +85,103 @@ function parseFunnelAnalysis(report: WeeklyReport | null) {
   }
 }
 
+function buildSummaryLines(
+  metrics: { views: number; engagement: number; visitors: number; subs: number },
+  prev: { views: number; engagement: number; visitors: number; subs: number } | null,
+  funnel: ReturnType<typeof parseFunnelAnalysis>,
+): SummaryLine[] {
+  const lines: SummaryLine[] = [];
+
+  if (metrics.views > 0 || metrics.engagement > 0) {
+    const socialParts: string[] = [];
+    if (metrics.views > 0) {
+      const viewsDelta = periodDeltaPhrase(metrics.views, prev?.views);
+      socialParts.push(
+        `${formatNumber(metrics.views)} video views${viewsDelta ? ` (${viewsDelta})` : ""}`,
+      );
+    }
+    if (metrics.engagement > 0) {
+      const engDelta = periodDeltaPhrase(metrics.engagement, prev?.engagement);
+      socialParts.push(
+        `${formatNumber(metrics.engagement)} reach + clicks${engDelta ? ` (${engDelta})` : ""}`,
+      );
+    }
+    lines.push({
+      product: "social",
+      text: `${socialParts.join(" · ")} · Metricool / @gofinalrev`,
+    });
+  }
+
+  const tooltraceLines: string[] = [];
+  const topRef = funnel?.topReferrers?.[0];
+  if (topRef && topRef.visitors > 0) {
+    tooltraceLines.push(
+      `Top referrer to tooltrace.ai: ${cleanReferrerDomain(topRef.domain)} (${formatNumber(topRef.visitors)} visitors)`,
+    );
+  }
+
+  if (metrics.visitors > 0 || prev?.visitors) {
+    const visitorsDelta = periodDeltaPhrase(metrics.visitors, prev?.visitors);
+    tooltraceLines.push(
+      `${formatNumber(metrics.visitors)} unique visitors on tooltrace.ai${visitorsDelta ? ` (${visitorsDelta})` : ""}`,
+    );
+  }
+
+  if (metrics.subs > 0) {
+    const conversionRate =
+      funnel?.analysis?.conversionRate ??
+      (metrics.visitors > 0 ? (metrics.subs / metrics.visitors) * 100 : null);
+    const conv =
+      conversionRate !== null && Number.isFinite(conversionRate)
+        ? ` · ${conversionRate.toFixed(1)}% visitor→Pro`
+        : "";
+    const subsDelta = periodDeltaPhrase(metrics.subs, prev?.subs);
+    tooltraceLines.push(
+      `${metrics.subs} new Tooltrace Pro sub${metrics.subs === 1 ? "" : "s"}${conv}${subsDelta ? ` (${subsDelta})` : ""}`,
+    );
+  } else if (metrics.visitors > 0) {
+    tooltraceLines.push("0 new Tooltrace Pro subs this period");
+  }
+
+  for (const text of tooltraceLines) {
+    lines.push({ product: "tooltrace", text });
+  }
+
+  const cadUploads = funnel?.finalrevCadUploads;
+  if (cadUploads !== null && cadUploads !== undefined) {
+    lines.push({
+      product: "finalrev",
+      text: `${formatNumber(cadUploads)} STEP upload${cadUploads === 1 ? "" : "s"} on finalrev.com (quote intent)`,
+    });
+  }
+
+  return lines;
+}
+
+function isAutoGeneratedLearning(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes("drove the most site traffic") ||
+    lower.includes("vs last week") ||
+    lower.includes("new pro sub") ||
+    lower.includes("visitor→") ||
+    (lower.includes("visitors") && lower.includes("conversion"))
+  );
+}
+
 export function buildOverviewSummary(
   report: WeeklyReport | null,
   channels: Channel[],
-  metrics: { views: number; visitors: number; subs: number },
+  metrics: { views: number; engagement: number; visitors: number; subs: number },
+  prev: { views: number; engagement: number; visitors: number; subs: number } | null = null,
 ): OverviewSummary {
-  const { headline, headlineType } = pickHeadline(report);
   const funnel = parseFunnelAnalysis(report);
   const cadUploads = funnel?.finalrevCadUploads ?? null;
+  const summaryLines = buildSummaryLines(metrics, prev, funnel);
+
+  const learning = report?.learning?.trim() ?? "";
+  const teamNote =
+    learning && !isAutoGeneratedLearning(learning) ? learning : null;
 
   const tooltraceConversionPct =
     funnel?.analysis?.conversionRate ??
@@ -137,8 +247,9 @@ export function buildOverviewSummary(
   });
 
   return {
-    headline,
-    headlineType,
+    summaryLines,
+    teamNote,
+    headlineType: pickHeadlineType(report),
     efficiency: {
       tooltraceConversionPct,
       socialToTooltraceRatio,

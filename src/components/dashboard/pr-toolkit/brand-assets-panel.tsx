@@ -66,7 +66,7 @@ export function BrandAssetsPanel() {
         <CardHeader>
           <CardTitle className="text-base">Marketing screenshots</CardTitle>
           <CardDescription>
-            {MARKETING_MEDIA.length} assets from tooltrace.ai and finalrev.com — open to download for posts and carousels
+            {MARKETING_MEDIA.length} assets from tooltrace.ai and finalrev.com. Open to download for posts.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -194,7 +194,7 @@ function AssetGroup({
           <PlatformLogo platformOrSlug={brand} size="sm" />
           {title}
         </CardTitle>
-        <CardDescription>SVG logos from the {title} codebase — use dark variants on dark backgrounds</CardDescription>
+        <CardDescription>SVG logos from {title}. Use dark variants on dark backgrounds.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-2 sm:grid-cols-2">
         {assets.map((asset) => (

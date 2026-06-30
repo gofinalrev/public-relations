@@ -35,6 +35,7 @@ const emptyReport = (weekStart: string): WeeklyReport => ({
   action_items_json: "[]",
   caption_studio_json: "{}",
   post_highlights_json: "{}",
+  intelligence_json: "",
   created_at: "",
   updated_at: "",
 });
@@ -110,7 +111,7 @@ export function WeeklyEntryForm({ weekStart, report, autoSynced }: WeeklyEntryFo
             <Textarea
               name="locked_findings"
               defaultValue={data.locked_findings}
-              placeholder="Next week: double down, cut, or test."
+              placeholder="Next week: continue, stop, or experiment with..."
               rows={3}
               disabled={pending}
             />

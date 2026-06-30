@@ -1,4 +1,5 @@
 import type { GrowthInsight } from "@/lib/metricool/insights";
+import { filterExecutiveInsights } from "@/lib/ops-log";
 
 export type ActionItem = {
   id: string;
@@ -40,11 +41,13 @@ function insightToAction(
 
 export function parseStoredInsights(raw: string): Array<{ type: string; title: string; body: string }> {
   if (!raw.trim()) return [];
-  return raw.split("\n\n").flatMap((block) => {
-    const match = block.match(/^\[(\w+)\]\s([^:]+):\s([\s\S]+)$/);
-    if (!match) return [];
-    return [{ type: match[1].toLowerCase(), title: match[2].trim(), body: match[3].trim() }];
-  });
+  return filterExecutiveInsights(
+    raw.split("\n\n").flatMap((block) => {
+      const match = block.match(/^\[(\w+)\]\s([^:]+):\s([\s\S]+)$/);
+      if (!match) return [];
+      return [{ type: match[1].toLowerCase(), title: match[2].trim(), body: match[3].trim() }];
+    }),
+  );
 }
 
 export function buildActionItems(
@@ -60,7 +63,7 @@ export function buildActionItems(
     .slice(0, 3)
     .map((i, idx) => insightToAction(i, "growth", idx));
 
-  const fromPosthog = posthogInsights
+  const fromPosthog = filterExecutiveInsights(posthogInsights)
     .filter((i) => i.type === "critical" || i.type === "warning")
     .slice(0, 2)
     .map((i, idx) => insightToAction(i, "posthog", idx));

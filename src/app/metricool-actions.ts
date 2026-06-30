@@ -11,6 +11,8 @@ import { fetchWeeklyPostHogMetrics, fetchPostHogMetricsForPeriod } from "@/lib/p
 import { buildActionItems, parseStoredInsights } from "@/lib/action-items";
 import { buildDashboardPeriodContext } from "@/lib/period-context";
 import { postWeeklyDigest } from "@/lib/slack/weekly-digest";
+import { canAttributeSocialToTooltrace, resolveContentFocus } from "@/lib/intelligence/content-focus";
+import { parsePostHighlights } from "@/lib/post-highlights";
 
 async function redditSetupNeeded(): Promise<boolean> {
   const reddit = (await getAllChannels()).find((c) => c.slug === "reddit");
@@ -51,6 +53,9 @@ export async function syncMetricoolForWeek(weekStart: string) {
 
     const growthInsights = analyzeGrowthFunnel(metrics, posthogMetrics, previousMetrics, {
       redditSetupNeeded: await redditSetupNeeded(),
+      socialLinkedToTooltrace: canAttributeSocialToTooltrace(
+        resolveContentFocus(parsePostHighlights(existing?.post_highlights_json)),
+      ),
     });
     const combinedLearning = buildCombinedLearning(metrics, posthogMetrics);
 
@@ -98,6 +103,9 @@ export async function refreshGrowthInsights(weekStart: string) {
       periodDays: metricool.periodDays,
       periodLabel: metricool.periodLabel,
       redditSetupNeeded: await redditSetupNeeded(),
+      socialLinkedToTooltrace: canAttributeSocialToTooltrace(
+        resolveContentFocus(parsePostHighlights(report.post_highlights_json)),
+      ),
     });
     await mergeGrowthInsights(weekStart, formatGrowthInsights(growthInsights));
 

@@ -43,7 +43,7 @@ export function ProductCheatsheetPanel() {
       <CardHeader>
         <CardTitle className="text-base">Product FAQ for comments & DMs</CardTitle>
         <CardDescription>
-          {totalCount} answers sourced from tooltrace.ai and finalrev.com — copy when replying on social
+          {totalCount} answers from tooltrace.ai and finalrev.com. Copy when replying on social.
         </CardDescription>
         <div className="flex flex-wrap gap-1.5 pt-2">
           {FILTER_OPTIONS.map((opt) => (

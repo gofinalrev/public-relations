@@ -1,6 +1,9 @@
 import type { PostHogWeeklyMetrics } from "./metrics";
 import type { WeeklyReport } from "@/lib/db";
 import { formatNumber } from "@/lib/utils";
+import { isStripeSubsUnconfigured, logOps } from "@/lib/ops-log";
+import { canAttributeSocialToTooltrace, resolveContentFocus } from "@/lib/intelligence/content-focus";
+import { parsePostHighlights } from "@/lib/post-highlights";
 
 export type PostHogInsight = {
   type: "success" | "warning" | "info" | "critical";
@@ -42,20 +45,19 @@ export function analyzePostHogWeek(
   const visitorDelta = pctChange(visitors, previousMetrics?.uniqueVisitors ?? null);
   const subsDelta = pctChange(subs, previousMetrics?.newSubscriptions ?? null);
 
+  const posts = parsePostHighlights(currentReport?.post_highlights_json);
+  const linked = canAttributeSocialToTooltrace(resolveContentFocus(posts));
+
   if (current.funnelUsedInference) {
-    insights.push({
-      type: "info",
-      title: "Funnel upload/generate inferred from downloads",
-      body: "Upload/generate below downloads. Likely wrong PostHog project. Set POSTHOG_TOOLTRACE_PROJECT_ID=167207.",
-    });
+    logOps(
+      "Funnel upload/generate inferred from downloads — likely wrong PostHog project. Set POSTHOG_TOOLTRACE_PROJECT_ID=167207.",
+    );
   }
 
-  if (current.subscriptionEventUsed.includes("not configured")) {
-    insights.push({
-      type: "critical",
-      title: "Pro subs not connected to Stripe",
-      body: "Subs stay at 0 until STRIPE_SECRET_KEY and STRIPE_PRO_PRICE_ID are in .env.local. Slack tracks real subs separately.",
-    });
+  if (isStripeSubsUnconfigured(current.subscriptionEventUsed)) {
+    logOps(
+      "Subs stay at 0 until STRIPE_SECRET_KEY and STRIPE_PRO_PRICE_ID are in .env.local. Slack tracks real subs separately.",
+    );
   }
 
   // Traffic vs conversion
@@ -67,7 +69,7 @@ export function analyzePostHogWeek(
     });
   }
 
-  if (visitors > 0 && subs === 0 && !current.subscriptionEventUsed.includes("not configured")) {
+  if (visitors > 0 && subs === 0 && !isStripeSubsUnconfigured(current.subscriptionEventUsed)) {
     insights.push({
       type: "critical",
       title: "Zero subscriptions this week",
@@ -135,11 +137,17 @@ export function analyzePostHogWeek(
   // Cross-reference Metricool if logged
   const metricoolViews = currentReport?.metricool_video_views ?? 0;
   const metricoolEngagement = currentReport?.metricool_engagement ?? 0;
-  if (metricoolViews > 1000 && visitors < 50) {
+  if (linked && metricoolViews > 1000 && visitors < 50) {
     insights.push({
       type: "warning",
       title: "Views ≠ Tooltrace visits",
-      body: `${formatNumber(metricoolViews)} video views, ${formatNumber(visitors)} Tooltrace visits. On-platform content isn't driving clicks. Strengthen bio link (tooltrace.ai/designer) and pinned comment.`,
+      body: `${formatNumber(metricoolViews)} video views, ${formatNumber(visitors)} Tooltrace visits. Review CTAs on Tooltrace-tagged posts.`,
+    });
+  } else if (!linked && metricoolViews > 1000 && visitors > 0) {
+    insights.push({
+      type: "info",
+      title: "Social and Tooltrace tracked separately",
+      body: `${formatNumber(metricoolViews)} @gofinalrev views and ${formatNumber(visitors)} Tooltrace visitors. Current social clips are finalREV-only; compare referrers instead of view-to-visit rate.`,
     });
   }
   if (metricoolEngagement > 500 && visitors > 100 && subs === 0) {
@@ -154,8 +162,8 @@ export function analyzePostHogWeek(
   if (subsDelta !== null && subsDelta > 50) {
     insights.push({
       type: "success",
-      title: "Subscription momentum",
-      body: `Subs +${subsDelta.toFixed(0)}% vs last week. Double down on content from 3-5 days before the spike.`,
+      title: "Subscription change vs last week",
+      body: `Pro subs +${subsDelta.toFixed(0)}% vs last week. Review posts from 3–5 days prior.`,
     });
   }
 
@@ -166,7 +174,7 @@ export function analyzePostHogWeek(
     insights.push({
       type: "info",
       title: "Baseline week logged",
-      body: "Not enough signal yet. Import Metricool + sync PostHog again next week for WoW comparisons.",
+      body: "Not enough signal yet. Import another Metricool PDF next week for week-over-week comparisons.",
     });
   }
 
@@ -185,35 +193,33 @@ function buildSuggestedLearning(
   conversionRate: number | null,
   topReferrer?: string,
 ): string {
-  const { uniqueVisitors, newSubscriptions, funnel } = current;
-  const parts: string[] = [];
+  const { uniqueVisitors, newSubscriptions } = current;
+  const lines: string[] = [];
 
   if (topReferrer && uniqueVisitors > 20) {
-    parts.push(`${topReferrer} drove the most site traffic`);
-  }
-
-  if (uniqueVisitors > 0 && newSubscriptions === 0) {
-    parts.push(
-      funnel.upload_image > 0
-        ? "people tried the tool but none upgraded to Pro"
-        : "traffic didn't activate the designer at all",
+    lines.push(
+      `Tooltrace · Top referrer to tooltrace.ai: ${topReferrer.replace(/^www\./i, "").toLowerCase()}`,
     );
-  } else if (newSubscriptions > 0 && conversionRate !== null) {
-    parts.push(`${newSubscriptions} new Pro sub${newSubscriptions === 1 ? "" : "s"} at ${conversionRate.toFixed(1)}% conversion`);
   }
 
-  const visitorChange = previous ? uniqueVisitors - previous.uniqueVisitors : 0;
-  if (previous && Math.abs(visitorChange) >= 10) {
-    parts.push(`visitors ${visitorChange > 0 ? "up" : "down"} ${Math.abs(visitorChange)} vs last week`);
+  if (uniqueVisitors > 0) {
+    const visitorChange = previous ? uniqueVisitors - previous.uniqueVisitors : 0;
+    const delta =
+      previous && Math.abs(visitorChange) >= 10
+        ? ` (${visitorChange > 0 ? "up" : "down"} ${Math.abs(visitorChange)} vs last period)`
+        : "";
+    lines.push(`Tooltrace · ${formatNumber(uniqueVisitors)} visitors on tooltrace.ai${delta}`);
   }
 
-  if (parts.length === 0) {
-    return "";
+  if (newSubscriptions > 0 && conversionRate !== null) {
+    lines.push(
+      `Tooltrace · ${newSubscriptions} new Pro sub${newSubscriptions === 1 ? "" : "s"} (${conversionRate.toFixed(1)}% visitor→Pro)`,
+    );
+  } else if (uniqueVisitors > 0 && newSubscriptions === 0) {
+    lines.push("Tooltrace · 0 new Pro subs this period");
   }
 
-  const sentence = parts.join(", ");
-  const capped = sentence.charAt(0).toUpperCase() + sentence.slice(1);
-  return capped.endsWith(".") ? capped : `${capped}.`;
+  return lines.join("\n");
 }
 
 function buildSuggestedFindings(

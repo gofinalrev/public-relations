@@ -28,8 +28,7 @@ export function ContentIdeasPanel({ report, channels, context }: ContentIdeasPan
       {!hasData && (
         <Card className="border-dashed border-amber-500/30 bg-amber-500/5">
           <CardContent className="py-4 text-sm text-muted-foreground">
-            Import a Metricool PDF on the <strong>This period</strong> tab first — ideas below use generic pillars until
-            we have this week&apos;s data.
+            Import a Metricool PDF on the <strong>This period</strong> tab first. Ideas use default content pillars until data is imported.
           </CardContent>
         </Card>
       )}
@@ -41,7 +40,7 @@ export function ContentIdeasPanel({ report, channels, context }: ContentIdeasPan
             Suggested for {context.activityLabel}
           </CardTitle>
           <CardDescription>
-            Generated from this period&apos;s metrics, channel goals, and growth insights — not generic social advice
+            Based on this period&apos;s metrics and channel goals.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

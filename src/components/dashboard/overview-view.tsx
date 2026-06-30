@@ -1,13 +1,15 @@
 import Link from "next/link";
 import type { OverviewViewProps } from "@/lib/overview-summary";
+import type { WeeklyIntelligence } from "@/lib/intelligence/types";
 import { pdfDownloadUrl, pdfViewUrl } from "@/lib/overview-summary";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { OverviewTrendChart } from "@/components/dashboard/overview-trend-chart";
 import { PostHighlightsPanel } from "@/components/dashboard/post-highlights-panel";
+import { IntelligenceOverview } from "@/components/dashboard/intelligence/intelligence-overview";
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { OverviewSummaryCard } from "@/components/dashboard/overview-summary-card";
 import {
   Play,
   Users,
@@ -37,14 +39,16 @@ export function OverviewView({
   prev,
   history,
   postHighlightsJson,
-}: OverviewViewProps) {
+  intelligence,
+}: OverviewViewProps & { intelligence: WeeklyIntelligence }) {
   const periodLink =
     weekStart !== context.weekKey ? `/?view=period&week=${weekStart}` : "/?view=period";
   const cadUploads = summary.finalrevCadUploads ?? 0;
   const showDelta = context.showWeekOverWeek;
   const totalActivity =
     metrics.views + metrics.engagement + metrics.visitors + metrics.subs + cadUploads;
-  const hasData = totalActivity > 0 || Boolean(summary.headline) || Boolean(pdfMeta);
+  const hasData =
+    totalActivity > 0 || summary.summaryLines.length > 0 || Boolean(pdfMeta);
 
   return (
     <div className="space-y-8">
@@ -95,19 +99,15 @@ export function OverviewView({
         </Card>
       )}
 
-      {summary.headline && (
-        <Card
-          className={cn(
-            "border",
-            headlineTone[summary.headlineType ?? "info"] ?? headlineTone.info,
-          )}
-        >
-          <CardContent className="space-y-2 p-5 sm:p-6">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Summary</p>
-            <p className="text-base leading-relaxed">{summary.headline}</p>
-          </CardContent>
-        </Card>
+      {(summary.summaryLines.length > 0 || summary.teamNote) && (
+        <OverviewSummaryCard
+          lines={summary.summaryLines}
+          teamNote={summary.teamNote}
+          tone={headlineTone[summary.headlineType ?? "info"] ?? headlineTone.info}
+        />
       )}
+
+      {hasData && <IntelligenceOverview intel={intelligence} />}
 
       {hasData && (
         <section>
@@ -174,7 +174,7 @@ export function OverviewView({
       <div className="flex justify-center border-t border-foreground/[0.06] pt-6">
         <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-primary">
           <Link href={periodLink}>
-            Platform breakdown, goals & ops
+            Platform breakdown, goals & funnel
             <ArrowRight className="size-3.5" />
           </Link>
         </Button>

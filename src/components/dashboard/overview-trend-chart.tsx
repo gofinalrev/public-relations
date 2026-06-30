@@ -2,36 +2,22 @@
 
 import type { WeeklyReport } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DashboardAreaChart } from "@/components/dashboard/dashboard-charts";
 import { formatWeekLabel, parseWeekKey } from "@/lib/weeks";
-import { formatNumber } from "@/lib/utils";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
 
 type OverviewTrendChartProps = {
   history: WeeklyReport[];
   currentWeekKey: string;
 };
 
-export function OverviewTrendChart({ history, currentWeekKey }: OverviewTrendChartProps) {
+export function OverviewTrendChart({ history }: OverviewTrendChartProps) {
   const recent = history.slice(-8);
 
   if (recent.length < 2) {
     return null;
   }
 
-  const chartData = recent.map((r) => ({
-    week: formatWeekLabel(parseWeekKey(r.week_start)).split(" – ")[0],
-    weekKey: r.week_start,
-    visitors: r.posthog_visitors,
-    subs: r.posthog_subscriptions,
-  }));
+  const categories = recent.map((r) => formatWeekLabel(parseWeekKey(r.week_start)).split(" – ")[0]);
 
   return (
     <Card>
@@ -39,32 +25,23 @@ export function OverviewTrendChart({ history, currentWeekKey }: OverviewTrendCha
         <CardTitle className="text-base">Tooltrace growth</CardTitle>
         <CardDescription>Visitors and Pro subs by period</CardDescription>
       </CardHeader>
-      <CardContent className="-mx-1 px-1 sm:mx-0 sm:px-0">
-        <div className="h-52 w-full min-w-0 sm:h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-              <XAxis dataKey="week" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 10 }} width={32} tickFormatter={(v) => formatNumber(v)} />
-              <Tooltip
-                formatter={(value) => formatNumber(Number(value))}
-                labelFormatter={(_, payload) => {
-                  const row = payload?.[0]?.payload as { weekKey?: string; week?: string } | undefined;
-                  if (row?.weekKey === currentWeekKey) return `${row.week ?? ""} · selected`;
-                  return row?.week ?? "";
-                }}
-                contentStyle={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
-              <Bar dataKey="visitors" name="Tooltrace visitors" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="subs" name="Tooltrace Pro" fill="hsl(var(--chart-4, var(--primary)))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      <CardContent className="pt-2">
+        <DashboardAreaChart
+          categories={categories}
+          series={[
+            {
+              name: "Tooltrace visitors",
+              data: recent.map((r) => r.posthog_visitors),
+              color: "hsl(0 0% 58%)",
+            },
+            {
+              name: "Tooltrace Pro",
+              data: recent.map((r) => r.posthog_subscriptions),
+              color: "hsl(72 100% 50%)",
+            },
+          ]}
+          height={260}
+        />
       </CardContent>
     </Card>
   );

@@ -17,9 +17,11 @@ import {
   Clock,
   ExternalLink,
   Loader2,
+  Pencil,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { logOps } from "@/lib/ops-log";
 
 const statusConfig = {
   active: { label: "Active", variant: "default" as const, icon: Clock },
@@ -32,10 +34,9 @@ type ChannelGoalsProps = {
   channels: Channel[];
   report: WeeklyReport | null;
   periodContext: DashboardPeriodContext;
-  youtubeApiEnabled: boolean;
 };
 
-export function ChannelGoals({ channels, report, periodContext, youtubeApiEnabled }: ChannelGoalsProps) {
+export function ChannelGoals({ channels, report, periodContext }: ChannelGoalsProps) {
   let breakdown: { periodDays?: number; extras?: { youtubeSubsGained?: number } } | null = null;
   if (report?.metricool_breakdown_json) {
     try {
@@ -60,7 +61,6 @@ export function ChannelGoals({ channels, report, periodContext, youtubeApiEnable
               key={channel.slug}
               channel={channel}
               resolved={resolveChannelGoal(channel, report, periodContext)}
-              youtubeApiEnabled={youtubeApiEnabled}
               youtubeSubsGained={channel.slug === "youtube" ? (breakdown?.extras?.youtubeSubsGained ?? null) : null}
               periodDays={breakdown?.periodDays ?? periodContext.periodDays}
             />
@@ -80,7 +80,6 @@ export function ChannelGoals({ channels, report, periodContext, youtubeApiEnable
                 key={channel.slug}
                 channel={channel}
                 resolved={resolveChannelGoal(channel, report, periodContext)}
-                youtubeApiEnabled={youtubeApiEnabled}
                 youtubeSubsGained={null}
                 periodDays={periodContext.periodDays}
               />
@@ -100,7 +99,6 @@ export function ChannelGoals({ channels, report, periodContext, youtubeApiEnable
               key={channel.slug}
               channel={channel}
               resolved={resolveChannelGoal(channel, report, periodContext)}
-              youtubeApiEnabled={youtubeApiEnabled}
               youtubeSubsGained={null}
               periodDays={periodContext.periodDays}
             />
@@ -116,27 +114,33 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 function ChannelGoalCard({
   channel,
   resolved,
-  youtubeApiEnabled,
   youtubeSubsGained,
   periodDays,
 }: {
   channel: Channel;
   resolved: ResolvedChannelGoal;
-  youtubeApiEnabled: boolean;
   youtubeSubsGained: number | null;
   periodDays: number | null;
 }) {
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
   const isMilestone = resolved.scope === "milestone";
+  const [editing, setEditing] = useState(false);
   const [inputValue, setInputValue] = useState(String(channel.current_value));
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isMilestone) {
+    if (isMilestone && !editing) {
       setInputValue(String(channel.current_value));
     }
-  }, [channel.current_value, isMilestone]);
+  }, [channel.current_value, isMilestone, editing]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 0);
+    return () => window.clearTimeout(timer);
+  }, [editing]);
 
   useEffect(() => {
     if (saveState !== "saved") return;
@@ -144,12 +148,15 @@ function ChannelGoalCard({
     return () => window.clearTimeout(timer);
   }, [saveState]);
 
+  useEffect(() => {
+    if (resolved.syncSource) {
+      logOps(`Channel ${channel.slug} data source: ${resolved.syncSource}`);
+    }
+  }, [channel.slug, resolved.syncSource]);
+
   const status = statusConfig[resolved.displayStatus];
   const StatusIcon = status.icon;
-  const isYoutubeApi = channel.slug === "youtube" && youtubeApiEnabled;
-  const isRedditApi = channel.slug === "reddit";
   const manualEditable = isMilestone && resolved.displayStatus !== "achieved";
-  const autoSyncedMilestone = isMilestone && (isYoutubeApi || isRedditApi);
 
   const velocity =
     isMilestone && channel.slug === "youtube" && youtubeSubsGained
@@ -170,6 +177,7 @@ function ChannelGoalCard({
       }
       setInputValue(String(result.current_value));
       setSaveState("saved");
+      setEditing(false);
       router.refresh();
     } catch {
       setSaveState("error");
@@ -179,6 +187,13 @@ function ChannelGoalCard({
 
   const parsedInput = Number(inputValue);
   const inputDirty = isMilestone && inputValue !== "" && parsedInput !== channel.current_value;
+
+  function cancelEdit() {
+    setInputValue(String(channel.current_value));
+    setSaveState("idle");
+    setSaveError(null);
+    setEditing(false);
+  }
 
   return (
     <form
@@ -250,14 +265,31 @@ function ChannelGoalCard({
 
       {!isMilestone && !resolved.hasPeriodData && (
         <p className="mt-3 text-[11px] text-amber-700 dark:text-amber-400">
-          No data yet for this period. PostHog syncs on page load, or import a Metricool PDF.
+          No data yet for this period. Import a Metricool PDF in Details.
         </p>
       )}
 
-      {manualEditable && (
-        <div className="mt-3 space-y-2">
+      {manualEditable && !editing && (
+        <button
+          type="button"
+          onClick={() => {
+            setSaveState("idle");
+            setSaveError(null);
+            setEditing(true);
+          }}
+          className="mt-3 flex min-h-[36px] w-full items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:border-foreground/[0.08] hover:bg-muted/40 hover:text-foreground"
+        >
+          <Pencil className="size-3 opacity-60" />
+          {channel.current_value === 0 ? "Add current total" : "Update count"}
+        </button>
+      )}
+
+      {manualEditable && editing && (
+        <div className="mt-3 space-y-2 border-t border-foreground/[0.06] pt-3">
+          <p className="text-[11px] text-muted-foreground">Latest all-time {channel.goal_metric}.</p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
+              ref={inputRef}
               name="current_value"
               type="number"
               min={0}
@@ -267,24 +299,33 @@ function ChannelGoalCard({
               className="h-10 text-xs tabular-nums sm:h-8"
               disabled={saveState === "saving"}
             />
-            <Button
-              type="submit"
-              size="sm"
-              variant={saveState === "saved" ? "default" : "secondary"}
-              disabled={saveState === "saving" || (!inputDirty && saveState !== "error")}
-              className={cn(
-                "min-h-[44px] w-full min-w-[5.5rem] shrink-0 sm:min-h-0 sm:w-auto",
-                saveState === "saved" && "bg-emerald-600 text-white hover:bg-emerald-600",
-              )}
-            >
-              {saveState === "saving" && <Loader2 className="size-3 animate-spin" />}
-              {saveState === "saved" && <CheckCircle2 className="size-3" />}
-              {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : "Update"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="submit"
+                size="sm"
+                variant={saveState === "saved" ? "default" : "secondary"}
+                disabled={saveState === "saving" || (!inputDirty && saveState !== "error")}
+                className={cn(
+                  "min-h-[44px] flex-1 min-w-[5.5rem] sm:min-h-0 sm:flex-none",
+                  saveState === "saved" && "bg-emerald-600 text-white hover:bg-emerald-600",
+                )}
+              >
+                {saveState === "saving" && <Loader2 className="size-3 animate-spin" />}
+                {saveState === "saved" && <CheckCircle2 className="size-3" />}
+                {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : "Save"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={saveState === "saving"}
+                onClick={cancelEdit}
+                className="min-h-[44px] sm:min-h-0"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
-          {inputDirty && saveState === "idle" && (
-            <p className="text-[11px] text-muted-foreground">Latest all-time count, then Update.</p>
-          )}
           {saveState === "saved" && (
             <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
               Saved {formatNumber(parsedInput)} {channel.goal_metric} (all-time).
@@ -294,14 +335,6 @@ function ChannelGoalCard({
             <p className="text-[11px] font-medium text-destructive">{saveError}</p>
           )}
         </div>
-      )}
-
-      {(autoSyncedMilestone || !isMilestone) && resolved.syncSource && (
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          {isYoutubeApi && "YouTube API"}
-          {isRedditApi && !isYoutubeApi && "Reddit API"}
-          {!isYoutubeApi && !isRedditApi && resolved.syncSource}
-        </p>
       )}
 
       {channel.notes && (

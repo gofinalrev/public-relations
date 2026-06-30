@@ -2,6 +2,7 @@ import type { WeeklyReport } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/utils";
+import { filterExecutiveInsights } from "@/lib/ops-log";
 import { Brain, ArrowRight } from "lucide-react";
 
 type FunnelData = {
@@ -43,11 +44,9 @@ export function PostHogInsightsPanel({ report }: PostHogInsightsPanelProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="size-5 text-muted-foreground" />
-            Site intelligence
+            Site metrics
           </CardTitle>
-          <CardDescription>
-            PostHog syncs on page load. Tooltrace funnel shows after first sync.
-          </CardDescription>
+          <CardDescription>Tooltrace funnel and conversion for this period.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -60,7 +59,7 @@ export function PostHogInsightsPanel({ report }: PostHogInsightsPanelProps) {
     funnelData = {};
   }
 
-  const insights = parseInsights(report.posthog_insights);
+  const insights = filterExecutiveInsights(parseInsights(report.posthog_insights));
   const funnel = funnelData.funnel;
   const analysis = funnelData.analysis;
 
@@ -69,16 +68,10 @@ export function PostHogInsightsPanel({ report }: PostHogInsightsPanelProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain className="size-5 text-primary" />
-          Site intelligence · Tooltrace
+          Tooltrace site metrics
         </CardTitle>
         <CardDescription>
-          Funnel and conversion on tooltrace.ai — not finalrev.com quote traffic
-          {funnelData.subscriptionEventUsed && (
-            <> · <span className="font-mono text-[10px] opacity-60">{funnelData.subscriptionEventUsed}</span></>
-          )}
-          {funnelData.funnelUsedInference && (
-            <> · <span className="text-[10px] text-primary">upload/generate inferred</span></>
-          )}
+          Tooltrace.ai funnel only (excludes finalrev.com)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

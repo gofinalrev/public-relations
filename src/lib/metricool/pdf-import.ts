@@ -17,6 +17,8 @@ import { fetchFinalRevCadUploadsForPeriod, fetchFinalRevCadUploadsForWeek } from
 import { syncFreeChannelStats } from "@/lib/social/sync";
 import { buildDashboardPeriodContext } from "@/lib/period-context";
 import { postWeeklyDigest } from "@/lib/slack/weekly-digest";
+import { canAttributeSocialToTooltrace, resolveContentFocus } from "@/lib/intelligence/content-focus";
+import { parsePostHighlights } from "@/lib/post-highlights";
 import fs from "fs";
 import path from "path";
 import type { WeeklyReport } from "@/lib/db";
@@ -93,6 +95,7 @@ export async function importMetricoolPdfBuffer(
     }
 
     const prevReport = await getWeeklyReport(getPreviousWeekKey(weekStart));
+    const existingForPosts = await getWeeklyReport(weekStart);
     const previousMetricool = prevReport?.metricool_breakdown_json
       ? JSON.parse(prevReport.metricool_breakdown_json)
       : null;
@@ -101,6 +104,9 @@ export async function importMetricoolPdfBuffer(
       periodDays: parsed.periodDays,
       periodLabel: parsed.periodLabel,
       redditSetupNeeded: await redditSetupNeeded(),
+      socialLinkedToTooltrace: canAttributeSocialToTooltrace(
+        resolveContentFocus(parsePostHighlights(existingForPosts?.post_highlights_json)),
+      ),
     };
 
     const growthInsights = analyzeGrowthFunnel(

@@ -7,6 +7,7 @@ import {
 } from "@/lib/gemini/caption-generator";
 import { buildCaptionWeekContext } from "@/lib/gemini/caption-prompt";
 import { isGeminiConfigured } from "@/lib/gemini/config";
+import { logOps } from "@/lib/ops-log";
 import type { ContentArchetype } from "@/lib/pr-toolkit/market-intelligence";
 import type { CaptionBrand, CaptionPlatform } from "@/lib/pr-toolkit/voice-guides";
 import { getDashboardData, getWeeklyReport, updateCaptionStudio } from "@/lib/db";
@@ -48,9 +49,10 @@ export async function generateCaptionsAction(
   input: GenerateCaptionsInput,
 ): Promise<GenerateCaptionsResult> {
   if (!isGeminiConfigured()) {
+    logOps("Caption Studio needs GOOGLE_GENERATIVE_AI_API_KEY (or GEMINI_API_KEY) in .env.local.");
     return {
       ok: false,
-      error: "Add GOOGLE_GENERATIVE_AI_API_KEY (or GEMINI_API_KEY) to .env.local to enable Caption Studio.",
+      error: "Caption Studio is not available yet.",
     };
   }
 

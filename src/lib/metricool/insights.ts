@@ -12,6 +12,8 @@ export type GrowthAnalysisContext = {
   periodDays?: number;
   periodLabel?: string;
   redditSetupNeeded?: boolean;
+  /** When false, finalREV social is not compared to Tooltrace site traffic. */
+  socialLinkedToTooltrace?: boolean;
 };
 
 function periodPhrase(ctx?: GrowthAnalysisContext): string {
@@ -57,6 +59,7 @@ export function analyzeGrowthFunnel(
   const prevViews = previousMetricool?.totalVideoViews ?? null;
   const prevEngagement = previousMetricool?.totalEngagement ?? null;
   const canComparePeriods = comparablePeriods(periodDays, previousMetricool);
+  const linked = context?.socialLinkedToTooltrace !== false;
 
   if (isMultiWeek && context?.periodLabel) {
     insights.push({
@@ -66,17 +69,23 @@ export function analyzeGrowthFunnel(
     });
   }
 
-  // North star: social → site → subscription
-  if (socialViews >= 100) {
+  // Social ↔ Tooltrace only when Tooltrace clips are in the mix
+  if (linked && socialViews >= 100) {
     const visitorRatio = siteVisitors / socialViews;
     const weakConversion = isMultiWeek ? visitorRatio < 0.15 : socialViews > 500 && siteVisitors < 30;
     if (weakConversion) {
       insights.push({
         type: "critical",
-        title: "Social reach isn't reaching the product",
-        body: `${formatNumber(socialViews)} views, ${formatNumber(siteVisitors)} Tooltrace visits in ${period}. Turn up bio links, pinned comments, and end-card CTAs to tooltrace.ai/designer.`,
+        title: "Social reach isn't reaching Tooltrace",
+        body: `${formatNumber(socialViews)} views, ${formatNumber(siteVisitors)} Tooltrace visits in ${period}. Strengthen Tooltrace CTAs on Tooltrace-tagged posts.`,
       });
     }
+  } else if (!linked && socialViews >= 500 && siteVisitors > 0) {
+    insights.push({
+      type: "info",
+      title: "Separate tracks: social vs Tooltrace site",
+      body: `${formatNumber(socialViews)} @gofinalrev views and ${formatNumber(siteVisitors)} Tooltrace visitors in ${period}. Current clips are finalREV shop-floor; site traffic is not attributed to these posts.`,
+    });
   }
 
   if (siteVisitors >= (isMultiWeek ? 50 : 50) && subs === 0) {
@@ -87,12 +96,12 @@ export function analyzeGrowthFunnel(
     });
   }
 
-  if (subs > 0 && socialViews > 0 && siteVisitors > 0) {
+  if (linked && subs > 0 && socialViews > 0 && siteVisitors > 0) {
     const rate = ((subs / siteVisitors) * 100).toFixed(1);
     insights.push({
       type: "success",
-      title: "Full funnel working",
-      body: `${formatNumber(socialViews)} views → ${formatNumber(siteVisitors)} Tooltrace visitors → ${subs} Pro sub${subs === 1 ? "" : "s"} (${rate}% Tooltrace conversion in ${period}). Document which post drove this.`,
+      title: "Tooltrace funnel active",
+      body: `${formatNumber(socialViews)} views → ${formatNumber(siteVisitors)} Tooltrace visitors → ${subs} Pro sub${subs === 1 ? "" : "s"} (${rate}% conversion in ${period}). Log which Tooltrace post drove this.`,
     });
   }
 
@@ -150,7 +159,7 @@ export function analyzeGrowthFunnel(
       insights.push({
         type: "success",
         title: "Video views surging",
-        body: `Views +${viewDelta.toFixed(0)}% ${compareLabel}. Find the breakout post. Repurpose its hook on YT + LinkedIn.`,
+        body: `Views +${viewDelta.toFixed(0)}% ${compareLabel}. Identify top post and repurpose on YT + LinkedIn.`,
       });
     } else if (viewDelta < -20) {
       insights.push({

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { logOps, sanitizeExecutiveError } from "@/lib/ops-log";
 import type { GeneratedPlatformCaptions } from "@/lib/gemini/caption-generator";
 import {
   generateCaptionsAction,
@@ -42,7 +43,6 @@ import {
   ChevronDown,
   ChevronUp,
   History,
-  AlertCircle,
   Star,
   Upload,
   FileAudio,
@@ -101,6 +101,12 @@ export function CaptionStudioPanel({
   useEffect(() => {
     setStudioState(initialStudioState);
   }, [initialStudioState]);
+
+  useEffect(() => {
+    if (!geminiConfigured) {
+      logOps("Caption Studio needs GOOGLE_GENERATIVE_AI_API_KEY (or GEMINI_API_KEY) in .env.local.");
+    }
+  }, [geminiConfigured]);
 
   useEffect(() => {
     setContentArchetype("auto");
@@ -164,7 +170,7 @@ export function CaptionStudioPanel({
       const res = await fetch("/api/caption/transcribe", { method: "POST", body: formData });
       const data = (await res.json()) as { ok: boolean; transcript?: string; error?: string };
       if (!data.ok || !data.transcript) {
-        setError(data.error ?? "Transcription failed");
+        setError(sanitizeExecutiveError(data.error ?? "Transcription failed", "Transcription failed"));
         return;
       }
       setTranscript(data.transcript);
@@ -191,7 +197,7 @@ export function CaptionStudioPanel({
         contentArchetype,
       });
       if (!result.ok) {
-        setError(result.error);
+        setError(sanitizeExecutiveError(result.error, "Caption generation failed."));
         return;
       }
       setResults(result.captions);
@@ -247,20 +253,10 @@ export function CaptionStudioPanel({
             Caption studio
           </CardTitle>
           <CardDescription>
-            Drop a transcript or clip. Gemini applies soul.md, manufacturing market playbooks (SendCutSend, OSH Cut, Xometry patterns), and this week&apos;s performance context — 4 distinct options per platform.
+            Paste a transcript or upload audio. Generates four caption options per platform using brand voice and this period&apos;s metrics.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!geminiConfigured && (
-            <div className="flex items-start gap-2 border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-muted-foreground">
-              <AlertCircle className="mt-0.5 size-4 shrink-0 text-amber-600" />
-              <span>
-                Add <code className="text-xs">GOOGLE_GENERATIVE_AI_API_KEY</code> to{" "}
-                <code className="text-xs">.env.local</code>.
-              </span>
-            </div>
-          )}
-
           <div className="flex flex-wrap gap-2">
             {(["finalrev", "tooltrace"] as const).map((b) => (
               <button
@@ -451,7 +447,7 @@ export function CaptionStudioPanel({
               className="flex min-h-[44px] items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground sm:min-h-0 sm:justify-start"
             >
               {showVoice ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-              soul.md
+              Brand voice guide
             </button>
             <button
               type="button"
@@ -459,7 +455,7 @@ export function CaptionStudioPanel({
               className="flex min-h-[44px] items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground sm:min-h-0 sm:justify-start"
             >
               {showMarket ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-              market playbook
+              Market context
             </button>
           </div>
 

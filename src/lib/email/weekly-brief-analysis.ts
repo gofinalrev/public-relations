@@ -13,7 +13,9 @@ import {
 import type { MetricoolWeeklyMetrics } from "@/lib/metricool/metrics";
 import { resolveChannelGoal } from "@/lib/channel-goals";
 import { formatNumber } from "@/lib/utils";
+import { isStripeSubsUnconfigured, logOps } from "@/lib/ops-log";
 import { PRODUCTION_TEAM_URL } from "@/lib/team-url";
+import { buildIntelligenceInput, buildWeeklyIntelligence } from "@/lib/intelligence/build";
 
 export type BriefMetric = {
   label: string;
@@ -85,73 +87,6 @@ function likeRate(views: number, likes: number): string {
   return `${((likes / views) * 100).toFixed(1)}%`;
 }
 
-function buildExecutiveSummary(input: BuildInput): string {
-  const { report, context } = input;
-  if (!report) {
-    return "No weekly data synced yet. Import the Metricool PDF and sync PostHog in the PR Command Center.";
-  }
-
-  const views = report.metricool_video_views;
-  const visitors = report.posthog_visitors;
-  const subs = report.posthog_subscriptions;
-  const funnel = parseFunnel(report);
-  const cad = funnel?.finalrevCadUploads ?? null;
-  const posts = parsePostHighlights(report.post_highlights_json);
-  const topPost = posts.length ? [...posts].sort((a, b) => b.views - a.views)[0] : null;
-
-  const parts: string[] = [];
-
-  if (context.isMultiWeekReport) {
-    parts.push(`Reporting period: ${context.activityLabel} (${context.periodDays} days).`);
-  } else {
-    parts.push(`Week of ${context.activityLabel}.`);
-  }
-
-  if (views > 0 || visitors > 0) {
-    const socialPart =
-      views > 0
-        ? `${formatNumber(views)} social video views`
-        : "minimal social video views logged";
-    const sitePart =
-      visitors > 0
-        ? `${formatNumber(visitors)} Tooltrace visitors`
-        : "Tooltrace traffic not synced";
-    parts.push(`${socialPart}, ${sitePart}.`);
-
-    if (visitors > 0 && views > 0) {
-      const ratio = visitors / views;
-      if (ratio >= 5) {
-        parts.push(
-          `Site traffic is ${ratio.toFixed(0)}× social views — growth is driven mainly by search, direct, and community referrers, not raw view count.`,
-        );
-      }
-    }
-  }
-
-  if (subs > 0) {
-    const rate = funnel?.analysis?.conversionRate;
-    parts.push(
-      `${subs} Pro subscription${subs === 1 ? "" : "s"}${rate != null ? ` (${rate.toFixed(1)}% visitor conversion)` : ""}.`,
-    );
-  }
-
-  if (cad !== null && cad > 0) {
-    parts.push(`${cad} STEP upload${cad === 1 ? "" : "s"} on finalrev.com (quote intent).`);
-  }
-
-  if (topPost) {
-    parts.push(
-      `Top logged post: "${topPost.title}" with ${formatNumber(topPost.views)} views on ${platformLabel(topPost.platform)}.`,
-    );
-  }
-
-  if (report.learning?.trim()) {
-    return report.learning.trim();
-  }
-
-  return parts.join(" ");
-}
-
 function sectionWhatsWorking(
   report: WeeklyReport,
   posts: ReturnType<typeof parsePostHighlights>,
@@ -166,33 +101,33 @@ function sectionWhatsWorking(
   }
 
   for (const insight of analyzePostHighlights(posts).filter((i) => i.type === "success")) {
-    bullets.push(`${insight.title} — ${insight.body}`);
+    bullets.push(`${insight.title}: ${insight.body}`);
   }
 
   const breakdown = parseBreakdown(report);
   const yt = breakdown?.platforms.find((p) => p.platform === "youtube");
   if (yt && yt.videoViews > 0) {
     bullets.push(
-      `YouTube Shorts logged ${formatNumber(yt.videoViews)} views with ${formatNumber(yt.followers)} subscribers — shop-floor CNC content can break out before YPP (1,000 subs).`,
+      `YouTube Shorts: ${formatNumber(yt.videoViews)} views. ${formatNumber(yt.followers)}/1,000 subscribers (YPP).`,
     );
   }
 
   const funnel = parseFunnel(report);
   if (funnel?.analysis?.activationRate != null && funnel.analysis.activationRate >= 50) {
     bullets.push(
-      `Tooltrace activation is strong: ${funnel.analysis.activationRate.toFixed(0)}% of visitors reach upload/trace — the product converts curiosity when traffic arrives.`,
+      `Tooltrace activation: ${funnel.analysis.activationRate.toFixed(0)}% of visitors reach upload/trace.`,
     );
   }
 
   const li = breakdown?.platforms.find((p) => p.platform === "linkedin");
   if (li && li.impressions > 100) {
     bullets.push(
-      `LinkedIn reached ${formatNumber(li.impressions)} impressions with ${formatNumber(li.engagement || 0)} interactions — B2B layer for finalREV quote trust.`,
+      `LinkedIn: ${formatNumber(li.impressions)} impressions, ${formatNumber(li.engagement || 0)} interactions.`,
     );
   }
 
   if (bullets.length === 0) {
-    bullets.push("Baseline week — keep posting shop-floor Shorts and logging post stats to build comparables.");
+    bullets.push("Baseline week. Continue posting Shorts and logging post stats for comparables.");
   }
 
   return {
@@ -213,7 +148,7 @@ function sectionWhatsNotWorking(report: WeeklyReport, posts: ReturnType<typeof p
   }
 
   for (const insight of analyzePostHighlights(posts).filter((i) => i.type === "warning")) {
-    bullets.push(`${insight.title} — ${insight.body}`);
+    bullets.push(`${insight.title}: ${insight.body}`);
   }
 
   const groups = new Map<string, typeof posts>();
@@ -230,7 +165,7 @@ function sectionWhatsNotWorking(report: WeeklyReport, posts: ReturnType<typeof p
     const rest = sorted.slice(1);
     if (best.views > rest.reduce((s, p) => s + p.views, 0) * 2 && best.views >= 100) {
       bullets.push(
-        `Cross-post gap: "${best.title}" got ${formatNumber(best.views)} on ${platformLabel(best.platform)} but ${rest.map((p) => `${formatNumber(p.views)} on ${platformLabel(p.platform)}`).join(", ")} — re-edit for native hooks instead of identical exports.`,
+        `Cross-post gap: "${best.title}" at ${formatNumber(best.views)} on ${platformLabel(best.platform)} vs ${rest.map((p) => `${formatNumber(p.views)} on ${platformLabel(p.platform)}`).join(", ")}. Use native hooks per platform.`,
       );
     }
   }
@@ -246,7 +181,7 @@ function sectionWhatsNotWorking(report: WeeklyReport, posts: ReturnType<typeof p
   }
 
   if (bullets.length === 0) {
-    bullets.push("No major red flags in automated checks — still validate Pro sub counts against Stripe if keys are not wired.");
+    bullets.push("No major issues in automated checks. Validate Pro sub counts against Stripe before external sharing.");
   }
 
   return {
@@ -275,17 +210,17 @@ function sectionOpportunities(
 
   if (google && google.visitors >= 1000) {
     bullets.push(
-      `SEO: ${formatNumber(google.visitors)} visitors from Google — double down on Gridfinity, 5S, and maker keywords on tooltrace.ai and community listings.`,
+      `SEO: ${formatNumber(google.visitors)} visitors from Google. Consider Gridfinity and 5S content on tooltrace.ai.`,
     );
   }
   if (gridfinity && gridfinity.visitors >= 100) {
     bullets.push(
-      `Maker community: ${formatNumber(gridfinity.visitors)} visitors from gridfinity.xyz — publish community designs and 5S content that speaks to Gridfinity users.`,
+      `Maker community: ${formatNumber(gridfinity.visitors)} visitors from gridfinity.xyz. Publish community designs and 5S content for Gridfinity users.`,
     );
   }
   if (youtubeRef && youtubeRef.visitors >= 50) {
     bullets.push(
-      `YouTube → site: ${formatNumber(youtubeRef.visitors)} Tooltrace visitors from YouTube — trace which Short drove clicks and repeat that format weekly.`,
+      `YouTube referrer: ${formatNumber(youtubeRef.visitors)} Tooltrace visitors tagged from YouTube. Log which Short drove clicks when Tooltrace clips go live.`,
     );
   }
 
@@ -295,17 +230,17 @@ function sectionOpportunities(
     .sort((a, b) => a.resolved.progressPct - b.resolved.progressPct)[0];
   if (furthest && furthest.resolved.progressPct < 30) {
     bullets.push(
-      `Channel goal: ${furthest.ch.name} at ${formatNumber(furthest.resolved.displayValue)} / ${formatNumber(furthest.resolved.displayTarget)} (${furthest.ch.goal_label}) — add follower CTAs on every post.`,
+      `Channel goal: ${furthest.ch.name} at ${formatNumber(furthest.resolved.displayValue)} / ${formatNumber(furthest.resolved.displayTarget)} (${furthest.ch.goal_label}). Add follower CTAs on every post.`,
     );
   }
 
   if (analytics.momentum.viewsVs4WeekAvg != null && analytics.momentum.viewsVs4WeekAvg > 20) {
-    bullets.push(`Social views ${formatMomentum(analytics.momentum.viewsVs4WeekAvg)} — capitalize while momentum is up.`);
+    bullets.push(`Social views ${formatMomentum(analytics.momentum.viewsVs4WeekAvg)} vs 4-week average.`);
   }
 
   const tiktok = input.channels.find((c) => c.slug === "tiktok");
   if (tiktok && tiktok.current_value === 0) {
-    bullets.push("TikTok is unstarted — zero extra filming: repurpose top YouTube Short with a native caption and designer CTA.");
+    bullets.push("TikTok not started. Repurpose top YouTube Short with native caption.");
   }
 
   if (bullets.length === 0) {
@@ -314,7 +249,7 @@ function sectionOpportunities(
 
   return {
     title: "Where to grow",
-    body: ["Highest-leverage moves based on this period's data:"],
+    body: ["Top actions based on this period's data:"],
     bullets,
   };
 }
@@ -327,13 +262,13 @@ function sectionPostPerformance(posts: ReturnType<typeof parsePostHighlights>): 
     const fmt = p.format ? ` · ${p.format}` : "";
     const likes = p.likes > 0 ? ` · ${p.likes} likes (${likeRate(p.views, p.likes)})` : "";
     const date = p.publishedAt ? ` · ${p.publishedAt}` : "";
-    return `"${p.title}" — ${formatNumber(p.views)} views on ${platformLabel(p.platform)}${fmt}${likes}${date}`;
+    return `"${p.title}": ${formatNumber(p.views)} views on ${platformLabel(p.platform)}${fmt}${likes}${date}`;
   });
 
   return {
     title: "Post performance (logged)",
     body: [
-      `${posts.length} posts tracked · ${formatNumber(totalHighlightViews(posts))} total logged views. Metricool may undercount IG Reel views — manual logs are the source of truth for cross-platform comparison.`,
+      `${posts.length} posts tracked · ${formatNumber(totalHighlightViews(posts))} total logged views. Metricool may undercount IG Reel views; manual logs are the source of truth for cross-platform comparison.`,
     ],
     bullets,
   };
@@ -439,29 +374,23 @@ function buildMetrics(input: BuildInput): BriefMetric[] {
 }
 
 function buildPriorities(input: BuildInput): string[] {
-  const ideas = buildPrContentIdeas(input.report, input.channels, input.context);
-  const fromIdeas = ideas.filter((i) => i.priority === "high").map((i) => i.title);
-  const posts = parsePostHighlights(input.report?.post_highlights_json);
-  const priorities: string[] = [];
+  const intel = buildWeeklyIntelligence(
+    buildIntelligenceInput(
+      input.weekStart,
+      input.report,
+      input.previousReport,
+      input.history,
+      input.channels,
+      input.context,
+    ),
+  );
+  const priorities = [
+    `Priority: ${intel.prescription.doFirst}`,
+    `Weekly focus: ${intel.prescription.betOfWeek}`,
+  ];
 
-  if (posts.length > 0) {
-    const top = [...posts].sort((a, b) => b.views - a.views)[0];
-    priorities.push(`Pin CTA on "${top.title}" while ${platformLabel(top.platform)} traffic is warm`);
-  }
-
-  for (const title of fromIdeas.slice(0, 3)) {
-    if (!priorities.some((p) => p.includes(title.slice(0, 20)))) {
-      priorities.push(title);
-    }
-  }
-
-  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
-    priorities.push("Wire Stripe keys in PR hub so Pro sub counts match billing");
-  }
-
-  if (priorities.length < 3) {
-    priorities.push("2–3 shop-floor Shorts this week (YouTube first, native IG edit 24h later)");
-    priorities.push("One LinkedIn post per Short — DFM or shop insight → finalrev.com/quote");
+  for (const item of intel.mondayQueue.slice(1, 4)) {
+    priorities.push(item.title);
   }
 
   return priorities.slice(0, 5);
@@ -584,9 +513,28 @@ export function buildWeeklyBriefAnalysis(input: BuildInput): WeeklyBriefAnalysis
   const posts = parsePostHighlights(report.post_highlights_json);
   const hubUrl = process.env.APP_PUBLIC_URL?.trim() || PRODUCTION_TEAM_URL;
 
-  const executiveSummary = buildExecutiveSummary(input);
+  const intelInput = buildIntelligenceInput(
+    input.weekStart,
+    report,
+    input.previousReport,
+    input.history,
+    input.channels,
+    input.context,
+  );
+  const intel = buildWeeklyIntelligence(intelInput);
+
+  const executiveSummary = report.learning?.trim() || intel.boardNarrative;
   const metrics = buildMetrics(input);
   const sections: BriefSection[] = [
+    {
+      title: "Priorities",
+      body: [
+        `Priority: ${intel.prescription.doFirst}`,
+        `Deprioritize: ${intel.prescription.ignore}`,
+        `Weekly focus: ${intel.prescription.betOfWeek}`,
+        intel.contentPnl.headline,
+      ],
+    },
     sectionWhatsWorking(report, posts),
     sectionWhatsNotWorking(report, posts),
     sectionOpportunities(input, analytics),
@@ -599,13 +547,10 @@ export function buildWeeklyBriefAnalysis(input: BuildInput): WeeklyBriefAnalysis
   if (refSection) sections.push(refSection);
 
   const funnel = parseFunnel(report);
-  if (funnel?.subscriptionEventUsed?.includes("not configured")) {
-    sections.push({
-      title: "Data note",
-      body: [
-        "Pro subscription count comes from PostHog, not Stripe — STRIPE_SECRET_KEY is not set in the PR hub. Validate sub numbers against Slack billing alerts before sharing externally.",
-      ],
-    });
+  if (isStripeSubsUnconfigured(funnel?.subscriptionEventUsed)) {
+    logOps(
+      "Pro subscription count comes from PostHog, not Stripe — STRIPE_SECRET_KEY is not set in the PR hub. Validate sub numbers against Slack billing alerts before sharing externally.",
+    );
   }
 
   const periodLabel = context.isMultiWeekReport

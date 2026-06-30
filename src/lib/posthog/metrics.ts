@@ -9,6 +9,7 @@ import {
 } from "./funnel-events";
 import { POSTHOG_CONFIG } from "./config";
 import { runHogQLQuery, scalarResult, rowsResult } from "./client";
+import { logOps } from "@/lib/ops-log";
 
 export type PostHogFunnel = ResolvedFunnel;
 
@@ -203,14 +204,20 @@ async function fetchPostHogMetricsForRange(
 
   let newSubscriptions = subscriptionSuccessViews;
   let subscriptionEventUsed = isStripeConfigured()
-    ? "PostHog fallback (Stripe configured)"
+    ? "stripe:posthog_fallback"
     : stripeConfigSource() === "missing"
-      ? "Stripe not configured — add STRIPE_SECRET_KEY + STRIPE_PRO_PRICE_ID to .env.local"
-      : "PostHog subscription_success pageview";
+      ? "stripe:not_configured"
+      : "posthog:subscription_success";
+
+  if (subscriptionEventUsed === "stripe:not_configured") {
+    logOps(
+      "Subs stay at 0 until STRIPE_SECRET_KEY and STRIPE_PRO_PRICE_ID are in .env.local. Slack tracks real subs separately.",
+    );
+  }
 
   if (stripeSubscriptions.source === "stripe") {
     newSubscriptions = stripeSubscriptions.count;
-    subscriptionEventUsed = `Stripe Pro subscriptions (${getStripeEnvironment()})`;
+    subscriptionEventUsed = `stripe:pro_subscriptions:${getStripeEnvironment()}`;
   } else if (discoveredEvent && discoveredEvent !== "order_paid") {
     const discoveredCount = await countDistinctUsersInRange(
       range,

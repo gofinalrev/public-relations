@@ -35,7 +35,7 @@ export function SocialProfilesPanel({ variant }: SocialProfilesPanelProps) {
         <CardHeader>
           <CardTitle className="text-base">Product URLs</CardTitle>
           <CardDescription>
-            Deep links for CTAs — pair with UTMs. Tooltrace for SaaS posts, finalREV for shop-floor / B2B.
+            Deep links for CTAs with UTMs. Tooltrace for product posts, finalREV for shop-floor and B2B.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -71,7 +71,7 @@ export function SocialProfilesPanel({ variant }: SocialProfilesPanelProps) {
       <CardHeader>
         <CardTitle className="text-base">@gofinalrev profiles</CardTitle>
         <CardDescription>
-          Shared social handle — link bios to Tooltrace (demos) or finalREV (quotes) per platform
+          Shared social handle. Link bios to Tooltrace (demos) or finalREV (quotes) per platform.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-2 sm:grid-cols-2">

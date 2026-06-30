@@ -2,6 +2,7 @@ import type { WeeklyReport } from "@/lib/db";
 import type { DashboardPeriodContext } from "@/lib/period-context";
 import { analyzeHistory, topPlatformByHistoricalViews } from "@/lib/history-analytics";
 import { parseStoredInsights } from "@/lib/action-items";
+import { filterExecutiveInsights } from "@/lib/ops-log";
 import { SOCIAL_PLATFORMS } from "@/lib/platforms";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +18,8 @@ type PrBriefPanelProps = {
 
 export function PrBriefPanel({ context, report, previousWeek, history }: PrBriefPanelProps) {
   const analytics = analyzeHistory(history, context.weekKey, previousWeek);
-  const growthInsights = parseStoredInsights(report?.growth_insights ?? "");
-  const posthogInsights = parseStoredInsights(report?.posthog_insights ?? "");
+  const growthInsights = filterExecutiveInsights(parseStoredInsights(report?.growth_insights ?? ""));
+  const posthogInsights = filterExecutiveInsights(parseStoredInsights(report?.posthog_insights ?? ""));
   const topInsight = [...growthInsights, ...posthogInsights].find(
     (i) => i.type === "critical" || i.type === "warning" || i.type === "success",
   );
@@ -44,7 +45,7 @@ export function PrBriefPanel({ context, report, previousWeek, history }: PrBrief
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Import a Metricool PDF for insights. PostHog adds funnel data on page load.
+            Import a Metricool PDF for insights on social performance this period.
           </p>
         )}
 
@@ -68,7 +69,7 @@ export function PrBriefPanel({ context, report, previousWeek, history }: PrBrief
 
         {analytics.weeksRecorded < 2 && (
           <p className="text-xs text-muted-foreground">
-            Log a few weekly PDFs to unlock 4-week averages and Trends.
+            Log a few weekly PDFs to enable 4-week averages on Trends.
           </p>
         )}
       </CardContent>

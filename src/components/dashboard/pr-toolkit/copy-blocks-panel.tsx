@@ -22,7 +22,7 @@ export function CopyBlocksPanel() {
       <Card className="border-primary/15">
         <CardHeader>
           <CardTitle className="text-base">One-liners</CardTitle>
-          <CardDescription>Product elevator pitch — pick Tooltrace, finalREV, or both</CardDescription>
+          <CardDescription>Product one-liners for Tooltrace, finalREV, or both</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {(["tooltrace", "finalrev", "both"] as const).map((key) => (
@@ -42,7 +42,7 @@ export function CopyBlocksPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Platform copy blocks</CardTitle>
-          <CardDescription>Bios, hooks, and CTAs — tap copy, paste into native apps</CardDescription>
+          <CardDescription>Bios, hooks, and CTAs. Tap to copy.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {COPY_BLOCKS.map((block) => (
@@ -64,7 +64,7 @@ export function CopyBlocksPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Content pillars</CardTitle>
-          <CardDescription>Recurring themes that perform — rotate when data is quiet</CardDescription>
+          <CardDescription>Default content themes when metrics are flat.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           {CONTENT_PILLARS.map((pillar) => (

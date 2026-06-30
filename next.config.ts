@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     ...(bonjour ? [bonjour] : []),
     ...(lanIp ? [lanIp] : []),
   ],
-  serverExternalPackages: ["pdf-parse", "pdfjs-dist", "@napi-rs/canvas"],
+  serverExternalPackages: ["pdf-parse", "pdfjs-dist", "@napi-rs/canvas", "ffmpeg-static", "ffprobe-static"],
   outputFileTracingIncludes: {
     "/api/metricool/pdf": [
       "./node_modules/@napi-rs/canvas/**/*",

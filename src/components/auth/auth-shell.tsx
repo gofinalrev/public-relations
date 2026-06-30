@@ -8,12 +8,6 @@ type AuthShellProps = {
 export function AuthShell({ children, className }: AuthShellProps) {
   return (
     <div className="dark auth-canvas relative flex min-h-dvh flex-col items-center justify-center px-4 py-10 text-foreground">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" aria-hidden />
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(204,255,0,0.12),transparent_45%)]"
-        aria-hidden
-      />
-
       <main className={cn("relative z-10 flex w-full max-w-sm flex-col items-center", className)}>
         {children}
       </main>

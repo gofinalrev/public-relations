@@ -2,21 +2,11 @@
 
 import type { WeeklyReport } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DashboardBarChart } from "@/components/dashboard/dashboard-charts";
 import { formatWeekLabel, parseWeekKey } from "@/lib/weeks";
-import { formatNumber } from "@/lib/utils";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
 import { Lightbulb } from "lucide-react";
 
-export function TrendsChart({ history, currentWeekKey }: { history: WeeklyReport[]; currentWeekKey?: string }) {
+export function TrendsChart({ history }: { history: WeeklyReport[]; currentWeekKey?: string }) {
   if (history.length === 0) {
     return (
       <Card>
@@ -30,12 +20,13 @@ export function TrendsChart({ history, currentWeekKey }: { history: WeeklyReport
 
   const chartData = history.map((r) => ({
     week: formatWeekLabel(parseWeekKey(r.week_start)).split(" – ")[0],
-    weekKey: r.week_start,
     views: r.metricool_video_views,
     engagement: r.metricool_engagement,
     visitors: r.posthog_visitors,
     subs: r.posthog_subscriptions,
   }));
+
+  const categories = chartData.map((d) => d.week);
 
   return (
     <Card>
@@ -45,43 +36,17 @@ export function TrendsChart({ history, currentWeekKey }: { history: WeeklyReport
           Each bar is one logged week. Period totals only, not live followers.
         </CardDescription>
       </CardHeader>
-      <CardContent className="-mx-1 px-1 sm:mx-0 sm:px-0">
-        <div className="h-64 w-full min-w-0 sm:h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 8, right: 4, left: -20, bottom: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis
-                dataKey="week"
-                tick={{ fontSize: 10 }}
-                interval="preserveStartEnd"
-                className="text-muted-foreground"
-              />
-              <YAxis tick={{ fontSize: 10 }} width={36} tickFormatter={(v) => formatNumber(v)} />
-              <Tooltip
-                formatter={(value) => formatNumber(Number(value))}
-                labelFormatter={(_, payload) => {
-                  const row = payload?.[0]?.payload as { weekKey?: string; week?: string } | undefined;
-                  if (row?.weekKey && row.weekKey === currentWeekKey) {
-                    return `${row.week ?? ""} · selected week`;
-                  }
-                  return row?.week ?? "";
-                }}
-                contentStyle={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: 0,
-                  fontSize: 12,
-                  maxWidth: "90vw",
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-              <Bar dataKey="views" name="Video Views" fill="hsl(var(--chart-1))" radius={0} />
-              <Bar dataKey="engagement" name="Engagement" fill="hsl(var(--chart-2))" radius={0} />
-              <Bar dataKey="visitors" name="Tooltrace visitors" fill="hsl(var(--chart-3))" radius={0} />
-              <Bar dataKey="subs" name="Tooltrace Pro" fill="hsl(var(--chart-4))" radius={0} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      <CardContent className="pt-2">
+        <DashboardBarChart
+          categories={categories}
+          series={[
+            { name: "Social views", data: chartData.map((d) => d.views), color: "hsl(72 100% 50%)" },
+            { name: "Social reach", data: chartData.map((d) => d.engagement), color: "hsl(72 70% 42%)" },
+            { name: "Tooltrace visitors", data: chartData.map((d) => d.visitors), color: "hsl(0 0% 55%)" },
+            { name: "Tooltrace Pro", data: chartData.map((d) => d.subs), color: "hsl(72 100% 35%)" },
+          ]}
+          height={300}
+        />
       </CardContent>
     </Card>
   );
@@ -133,7 +98,7 @@ export function HistoryTable({ history }: { history: WeeklyReport[] }) {
     <Card>
       <CardHeader>
         <CardTitle>Weekly log</CardTitle>
-        <CardDescription>All recorded weeks — each row is that week&apos;s period totals only.</CardDescription>
+        <CardDescription>Each row shows that week&apos;s period totals.</CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto overscroll-x-contain">
         <table className="w-full min-w-[36rem] text-sm">
@@ -153,11 +118,11 @@ export function HistoryTable({ history }: { history: WeeklyReport[] }) {
                 <td className="p-3 font-medium whitespace-nowrap">
                   {formatWeekLabel(parseWeekKey(r.week_start))}
                 </td>
-                <td className="p-3 tabular-nums">{formatNumber(r.metricool_video_views)}</td>
-                <td className="p-3 tabular-nums">{formatNumber(r.metricool_engagement)}</td>
-                <td className="p-3 tabular-nums">{formatNumber(r.posthog_visitors)}</td>
+                <td className="p-3 tabular-nums">{r.metricool_video_views.toLocaleString()}</td>
+                <td className="p-3 tabular-nums">{r.metricool_engagement.toLocaleString()}</td>
+                <td className="p-3 tabular-nums">{r.posthog_visitors.toLocaleString()}</td>
                 <td className="p-3 tabular-nums font-semibold text-primary-700">
-                  {formatNumber(r.posthog_subscriptions)}
+                  {r.posthog_subscriptions.toLocaleString()}
                 </td>
                 <td className="max-w-xs truncate p-3 text-muted-foreground">{r.learning || "—"}</td>
               </tr>

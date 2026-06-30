@@ -21,6 +21,7 @@ export type WeeklyReport = {
   action_items_json: string;
   caption_studio_json: string;
   post_highlights_json: string;
+  intelligence_json: string;
   created_at: string;
   updated_at: string;
 };
@@ -41,7 +42,9 @@ export type Channel = {
   updated_at: string;
 };
 
-export type WeeklyReportInput = Omit<WeeklyReport, "id" | "created_at" | "updated_at">;
+export type WeeklyReportInput = Omit<WeeklyReport, "id" | "created_at" | "updated_at" | "intelligence_json"> & {
+  intelligence_json?: string;
+};
 export type ChannelInput = Omit<Channel, "id" | "updated_at">;
 
 export type MetricoolPdfMeta = {
@@ -111,6 +114,7 @@ function parseWeeklyReport(row: Record<string, unknown>): WeeklyReport {
     action_items_json: String(rowVal(row, "action_items_json") ?? "[]"),
     caption_studio_json: String(rowVal(row, "caption_studio_json") ?? "{}"),
     post_highlights_json: String(rowVal(row, "post_highlights_json") ?? "{}"),
+    intelligence_json: String(rowVal(row, "intelligence_json") ?? ""),
     created_at: String(rowVal(row, "created_at")),
     updated_at: String(rowVal(row, "updated_at")),
   };
@@ -195,6 +199,7 @@ async function migrateSchema(db: Client): Promise<void> {
   if (!names.has("action_items_json")) alters.push("ALTER TABLE weekly_reports ADD COLUMN action_items_json TEXT NOT NULL DEFAULT '[]'");
   if (!names.has("caption_studio_json")) alters.push("ALTER TABLE weekly_reports ADD COLUMN caption_studio_json TEXT NOT NULL DEFAULT '{}'");
   if (!names.has("post_highlights_json")) alters.push("ALTER TABLE weekly_reports ADD COLUMN post_highlights_json TEXT NOT NULL DEFAULT '{}'");
+  if (!names.has("intelligence_json")) alters.push("ALTER TABLE weekly_reports ADD COLUMN intelligence_json TEXT NOT NULL DEFAULT ''");
 
   for (const sql of alters) {
     await db.execute(sql);
@@ -390,6 +395,37 @@ export async function setAppSetting(key: string, value: string): Promise<void> {
   });
 }
 
+export async function updateIntelligenceJson(weekStart: string, json: string): Promise<void> {
+  await ensureReady();
+  const existing = await getWeeklyReport(weekStart);
+  if (!existing) {
+    await upsertWeeklyReport({
+      week_start: weekStart,
+      metricool_video_views: 0,
+      metricool_engagement: 0,
+      posthog_visitors: 0,
+      posthog_subscriptions: 0,
+      learning: "",
+      locked_findings: "",
+      posthog_insights: "",
+      posthog_funnel_json: "",
+      posthog_synced_at: null,
+      metricool_breakdown_json: "",
+      metricool_synced_at: null,
+      growth_insights: "",
+      action_items_json: "[]",
+      caption_studio_json: "{}",
+      post_highlights_json: "{}",
+      intelligence_json: json,
+    });
+    return;
+  }
+  await getClient().execute({
+    sql: "UPDATE weekly_reports SET intelligence_json = ?, updated_at = datetime('now') WHERE week_start = ?",
+    args: [json, weekStart],
+  });
+}
+
 export async function getWeeklyReport(weekStart: string): Promise<WeeklyReport | null> {
   await ensureReady();
   const result = await getClient().execute({
@@ -419,8 +455,8 @@ export async function upsertWeeklyReport(data: WeeklyReportInput): Promise<Weekl
       posthog_visitors, posthog_subscriptions, learning, locked_findings,
       posthog_insights, posthog_funnel_json, posthog_synced_at,
       metricool_breakdown_json, metricool_synced_at, growth_insights, action_items_json,
-      caption_studio_json, post_highlights_json
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      caption_studio_json, post_highlights_json, intelligence_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(week_start) DO UPDATE SET
       metricool_video_views = excluded.metricool_video_views,
       metricool_engagement = excluded.metricool_engagement,
@@ -437,6 +473,7 @@ export async function upsertWeeklyReport(data: WeeklyReportInput): Promise<Weekl
       action_items_json = COALESCE(NULLIF(excluded.action_items_json, ''), weekly_reports.action_items_json),
       caption_studio_json = COALESCE(NULLIF(excluded.caption_studio_json, ''), weekly_reports.caption_studio_json),
       post_highlights_json = COALESCE(NULLIF(excluded.post_highlights_json, ''), weekly_reports.post_highlights_json),
+      intelligence_json = COALESCE(NULLIF(excluded.intelligence_json, ''), weekly_reports.intelligence_json),
       updated_at = datetime('now')`,
     args: [
       data.week_start,
@@ -455,6 +492,7 @@ export async function upsertWeeklyReport(data: WeeklyReportInput): Promise<Weekl
       data.action_items_json ?? existing?.action_items_json ?? "[]",
       data.caption_studio_json ?? existing?.caption_studio_json ?? "{}",
       data.post_highlights_json ?? existing?.post_highlights_json ?? "{}",
+      data.intelligence_json ?? existing?.intelligence_json ?? "",
     ],
   });
 
@@ -481,6 +519,7 @@ export async function updateCaptionStudio(weekStart: string, captionStudioJson: 
       action_items_json: "[]",
       caption_studio_json: captionStudioJson,
       post_highlights_json: "{}",
+      intelligence_json: "",
     });
     return;
   }
@@ -511,6 +550,7 @@ export async function updatePostHighlights(weekStart: string, postHighlightsJson
       action_items_json: "[]",
       caption_studio_json: "{}",
       post_highlights_json: postHighlightsJson,
+      intelligence_json: "",
     });
     return;
   }
@@ -549,6 +589,7 @@ export async function upsertPostHogSync(
     action_items_json: existing?.action_items_json ?? "[]",
     caption_studio_json: existing?.caption_studio_json ?? "{}",
     post_highlights_json: existing?.post_highlights_json ?? "{}",
+    intelligence_json: existing?.intelligence_json ?? "",
   });
 }
 
@@ -587,6 +628,7 @@ export async function upsertMetricoolSync(
     action_items_json: payload.actionItemsJson ?? existing?.action_items_json ?? "[]",
     caption_studio_json: existing?.caption_studio_json ?? "{}",
     post_highlights_json: existing?.post_highlights_json ?? "{}",
+    intelligence_json: existing?.intelligence_json ?? "",
   });
 }
 

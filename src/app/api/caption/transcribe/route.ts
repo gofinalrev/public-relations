@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isGeminiConfigured } from "@/lib/gemini/config";
 import { resolveTranscribeMimeType, transcribeMediaBuffer } from "@/lib/gemini/transcribe";
+import { logOps, sanitizeExecutiveError } from "@/lib/ops-log";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function POST(request: NextRequest) {
   if (!isGeminiConfigured()) {
+    logOps("Transcription needs GOOGLE_GENERATIVE_AI_API_KEY in .env.local.");
     return NextResponse.json(
-      { ok: false, error: "Add GOOGLE_GENERATIVE_AI_API_KEY to .env.local" },
+      { ok: false, error: "Transcription is not available yet." },
       { status: 503 },
     );
   }
@@ -37,8 +39,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, transcript });
   } catch (err) {
+    const message = err instanceof Error ? err.message : "Transcription failed";
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : "Transcription failed" },
+      { ok: false, error: sanitizeExecutiveError(message, "Transcription failed") },
       { status: 500 },
     );
   }

@@ -11,7 +11,11 @@ import { CopyBlocksPanel } from "./pr-toolkit/copy-blocks-panel";
 import { ContentIdeasPanel } from "./pr-toolkit/content-ideas-panel";
 import { ProductCheatsheetPanel } from "./pr-toolkit/product-cheatsheet-panel";
 import { CaptionStudioPanel } from "./pr-toolkit/caption-studio-panel";
-import { Image, Link2, MessageSquare, Lightbulb, BookOpen, Sparkles } from "lucide-react";
+import { Image, Link2, MessageSquare, Lightbulb, BookOpen, Sparkles, Brain, Clapperboard } from "lucide-react";
+import { IntelligenceToolkit } from "./intelligence/intelligence-toolkit";
+import type { WeeklyIntelligence } from "@/lib/intelligence/types";
+import { parsePostHighlights } from "@/lib/post-highlights";
+import { ShortsEditorPanel } from "./pr-toolkit/shorts-editor-panel";
 
 type PrToolkitViewProps = {
   weekStart: string;
@@ -19,10 +23,14 @@ type PrToolkitViewProps = {
   channels: Channel[];
   context: DashboardPeriodContext;
   geminiConfigured: boolean;
+  intelligence?: WeeklyIntelligence;
+  weekContextSummary?: string;
 };
 
 const SECTIONS = [
   { id: "captions", label: "Captions", icon: Sparkles },
+  { id: "shorts", label: "Shorts", icon: Clapperboard },
+  { id: "intel", label: "Insights", icon: Brain },
   { id: "ideas", label: "Ideas", icon: Lightbulb },
   { id: "copy", label: "Copy", icon: MessageSquare },
   { id: "links", label: "Links", icon: Link2 },
@@ -38,6 +46,8 @@ export function PrToolkitView({
   channels,
   context,
   geminiConfigured,
+  intelligence,
+  weekContextSummary,
 }: PrToolkitViewProps) {
   const [section, setSection] = useState<SectionId>("captions");
 
@@ -66,11 +76,25 @@ export function PrToolkitView({
         })}
       </div>
 
+      {section === "shorts" && (
+        <ShortsEditorPanel
+          weekStart={weekStart}
+          geminiConfigured={geminiConfigured}
+          weekContextSummary={weekContextSummary}
+        />
+      )}
       {section === "captions" && (
         <CaptionStudioPanel
           weekStart={weekStart}
           geminiConfigured={geminiConfigured}
           initialStudioState={parseCaptionStudioState(report?.caption_studio_json)}
+        />
+      )}
+      {section === "intel" && intelligence && (
+        <IntelligenceToolkit
+          intel={intelligence}
+          weekStart={weekStart}
+          posts={parsePostHighlights(report?.post_highlights_json)}
         />
       )}
       {section === "ideas" && (

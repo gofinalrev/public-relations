@@ -34,6 +34,38 @@ export function getIntegrationStatus(report: {
   };
 }
 
+/** Ops/integration notes — log only, never render in the dashboard UI. */
+export function getIntegrationOpsNotes(status: IntegrationStatus): string[] {
+  const notes: string[] = [];
+
+  if (!status.posthog) {
+    notes.push(
+      "PostHog key missing — Tooltrace funnel and finalREV uploads won't sync. Add POSTHOG_PERSONAL_API_KEY to .env.local.",
+    );
+  } else if (!status.hasPostHogThisWeek) {
+    notes.push("PostHog sync runs on page load.");
+  }
+
+  if (!status.stripe) {
+    notes.push(
+      "Subs stay at 0 until STRIPE_SECRET_KEY and STRIPE_PRO_PRICE_ID are in .env.local. Slack tracks real subs separately.",
+    );
+  } else {
+    notes.push(`Stripe connected (source: ${status.stripeSource}).`);
+  }
+
+  if (!status.youtube) {
+    notes.push("YouTube API off — update YouTube subs manually in channel goals.");
+  }
+
+  if (!status.metricoolApi) {
+    notes.push("Metricool API not configured — PDF import still works.");
+  }
+
+  return notes;
+}
+
+/** Executive-facing data gaps only — no env keys or integration setup hints. */
 export function getIntegrationWarnings(status: IntegrationStatus): IntegrationWarning[] {
   const warnings: IntegrationWarning[] = [];
 
@@ -41,37 +73,7 @@ export function getIntegrationWarnings(status: IntegrationStatus): IntegrationWa
     warnings.push({
       id: "no-pdf",
       level: "warning",
-      message: "No PDF this week. Social metrics empty until import.",
-    });
-  }
-
-  if (!status.posthog) {
-    warnings.push({
-      id: "no-posthog",
-      level: "warning",
-      message: "PostHog key missing. Tooltrace funnel and finalREV uploads won't sync.",
-    });
-  } else if (!status.hasPostHogThisWeek) {
-    warnings.push({
-      id: "posthog-pending",
-      level: "info",
-      message: "PostHog syncs on page load.",
-    });
-  }
-
-  if (!status.stripe) {
-    warnings.push({
-      id: "no-stripe",
-      level: "warning",
-      message: "Stripe off. Pro subs read 0. Get keys from Devon.",
-    });
-  }
-
-  if (!status.youtube) {
-    warnings.push({
-      id: "no-youtube",
-      level: "info",
-      message: "YouTube API off. Update subs manually in goals.",
+      message: "No PDF this week — social metrics are empty until import.",
     });
   }
 
