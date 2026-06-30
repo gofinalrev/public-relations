@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth/auth.config";
-import { isGoogleAuthConfigured } from "@/lib/auth/allowed-email";
 import {
   cronAuthorized,
   isPublicPath,
@@ -8,23 +7,39 @@ import {
 } from "@/lib/auth/network-gate";
 import { NextResponse } from "next/server";
 
-const { auth } = NextAuth(authConfig);
+const { auth } = NextAuth({
+  ...authConfig,
+  secret: process.env.AUTH_SECRET,
+});
+
+/**
+ * Next.js inlines env vars referenced in this file at build time.
+ * VERCEL is always set on deploy — use it so production always requires sign-in.
+ */
+function shouldRequireAuth(): boolean {
+  if (process.env.VERCEL === "1") {
+    return true;
+  }
+  return Boolean(
+    process.env.AUTH_SECRET?.trim() && process.env.GOOGLE_CLIENT_ID?.trim(),
+  );
+}
 
 export default auth((req) => {
   const { nextUrl } = req;
   const pathname = nextUrl.pathname;
-  const authEnabled = isGoogleAuthConfigured({ forEdge: true });
+  const authRequired = shouldRequireAuth();
 
   if (pathname.startsWith("/api/cron")) {
     if (cronAuthorized(req)) return NextResponse.next();
-    if (authEnabled && req.auth) return NextResponse.next();
+    if (authRequired && req.auth) return NextResponse.next();
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const denied = networkOnlyGate(req);
+  const denied = networkOnlyGate(req, { authEnabled: authRequired });
   if (denied) return denied;
 
-  if (!authEnabled) {
+  if (!authRequired) {
     return NextResponse.next();
   }
 

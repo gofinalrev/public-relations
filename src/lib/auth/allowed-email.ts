@@ -21,13 +21,8 @@ export function isGoogleAuthConfigured(options?: { forEdge?: boolean }): boolean
   const hasSecret = Boolean(process.env.AUTH_SECRET?.trim());
   const hasClientId = Boolean(process.env.GOOGLE_CLIENT_ID?.trim());
   if (options?.forEdge) {
-    // Edge middleware cannot access GOOGLE_CLIENT_SECRET on Vercel — ID + AUTH_SECRET is enough.
+    // Prefer middleware.ts inline check; this is a fallback for other edge callers.
     return hasSecret && hasClientId;
   }
   return Boolean(hasSecret && hasClientId && process.env.GOOGLE_CLIENT_SECRET?.trim());
-}
-
-/** @deprecated use isGoogleAuthConfigured() */
-export function isGoogleAuthConfiguredForMiddleware(): boolean {
-  return isGoogleAuthConfigured({ forEdge: true });
 }

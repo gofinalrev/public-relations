@@ -6,14 +6,16 @@ import {
   isPrivateOrLocalIp,
   isVercelDeployment,
 } from "@/lib/network-access";
-import { isGoogleAuthConfigured } from "@/lib/auth/allowed-email";
 
-export function networkOnlyGate(request: NextRequest): NextResponse | null {
+export function networkOnlyGate(
+  request: NextRequest,
+  options?: { authEnabled?: boolean },
+): NextResponse | null {
   if (!isNetworkOnlyMode()) {
     return null;
   }
 
-  if (isGoogleAuthConfigured({ forEdge: true })) {
+  if (options?.authEnabled) {
     return null;
   }
 
