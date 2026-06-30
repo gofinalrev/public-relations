@@ -44,7 +44,7 @@ export default auth((req) => {
   }
 
   if (isPublicPath(pathname)) {
-    if (req.auth && pathname === "/login") {
+    if (req.auth?.user && pathname === "/login") {
       return NextResponse.redirect(new URL("/", nextUrl.origin));
     }
     return NextResponse.next();
