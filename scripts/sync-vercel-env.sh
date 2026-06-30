@@ -80,6 +80,4 @@ npx vercel env rm AUTH_URL production --scope "$SCOPE" --yes 2>/dev/null || true
 echo ""
 echo "Synced $SYNCED variables. Redeploy: npm run deploy"
 echo ""
-echo "Sign-in options after deploy:"
-echo "  • Email magic link (RESEND_API_KEY + AUTH_SECRET)"
-echo "  • Google OAuth (optional — add GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET to .env.local first)"
+echo "Sign-in: Google OAuth only. Run: bash scripts/setup-google-oauth.sh"

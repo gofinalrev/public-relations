@@ -1,10 +1,5 @@
 import { signIn, auth } from "@/lib/auth";
-import {
-  getAllowedEmailDomains,
-  isAuthConfigured,
-  isEmailAuthConfigured,
-  isGoogleAuthConfigured,
-} from "@/lib/auth/allowed-email";
+import { getAllowedEmailDomains, isGoogleAuthConfigured } from "@/lib/auth/allowed-email";
 import { AuthBrand, AuthCard, AuthShell } from "@/components/auth/auth-shell";
 import { redirect } from "next/navigation";
 
@@ -17,25 +12,23 @@ type LoginPageProps = {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const session = await auth();
+  const callbackUrl = params.callbackUrl ?? "/";
+
   if (session?.user) {
-    redirect(params.callbackUrl ?? "/");
+    redirect(callbackUrl);
   }
 
   const googleReady = isGoogleAuthConfigured();
-  const emailReady = isEmailAuthConfigured();
-  const configured = isAuthConfigured();
   const domains = getAllowedEmailDomains().join(", @");
+
+  // One click: land on /login → go straight to Google account picker.
+  if (googleReady && !params.error) {
+    await signIn("google", { redirectTo: callbackUrl });
+  }
 
   async function signInWithGoogle() {
     "use server";
-    await signIn("google", { redirectTo: params.callbackUrl ?? "/" });
-  }
-
-  async function signInWithEmail(formData: FormData) {
-    "use server";
-    const email = (formData.get("email") as string)?.trim();
-    if (!email) return;
-    await signIn("resend", { email, redirectTo: params.callbackUrl ?? "/" });
+    await signIn("google", { redirectTo: callbackUrl });
   }
 
   return (
@@ -44,64 +37,36 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <AuthCard>
         {params.error === "AccessDenied" && (
           <p className="mb-5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            Use an @{domains} account.
+            Use your @{domains} Google account.
           </p>
         )}
 
-        {params.error === "Verification" && (
-          <p className="mb-5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-            Link expired or already used. Request a new one below.
+        {(params.error === "OAuthSignin" ||
+          params.error === "OAuthCallback" ||
+          params.error === "Configuration") && (
+          <p className="mb-5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            Google sign-in failed. Try again or contact your admin.
           </p>
         )}
 
-        {configured ? (
-          <div className="space-y-4">
-            {googleReady && (
-              <form action={signInWithGoogle}>
-                <button
-                  type="submit"
-                  className="flex h-12 w-full items-center justify-center gap-2.5 rounded-lg border border-white/12 bg-white/[0.04] text-sm font-semibold text-white transition-all hover:border-primary/35 hover:bg-white/[0.07] hover:shadow-[0_0_28px_-6px_rgba(204,255,0,0.35)] active:scale-[0.99]"
-                >
-                  <GoogleIcon />
-                  Continue with Google
-                </button>
-              </form>
-            )}
-
-            {emailReady && (
-              <form action={signInWithEmail} className="space-y-3">
-                {googleReady && (
-                  <p className="text-center text-[11px] uppercase tracking-wider text-white/35">or</p>
-                )}
-                <label htmlFor="email" className="sr-only">
-                  Work email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  placeholder={`you@${getAllowedEmailDomains()[0] ?? "finalrev.com"}`}
-                  className="flex h-11 w-full rounded-lg border border-white/12 bg-white/[0.04] px-3 text-sm text-white placeholder:text-white/35 focus:border-primary/40 focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="flex h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 active:scale-[0.99]"
-                >
-                  Email me a sign-in link
-                </button>
-                <p className="text-center text-[11px] text-white/40">
-                  One-time link to your @{domains} inbox. Check spam if needed.
-                </p>
-              </form>
-            )}
-          </div>
+        {googleReady ? (
+          <form action={signInWithGoogle}>
+            <button
+              type="submit"
+              className="flex h-12 w-full items-center justify-center gap-2.5 rounded-lg border border-white/12 bg-white/[0.04] text-sm font-semibold text-white transition-all hover:border-primary/35 hover:bg-white/[0.07] hover:shadow-[0_0_28px_-6px_rgba(204,255,0,0.35)] active:scale-[0.99]"
+            >
+              <GoogleIcon />
+              Sign in with Google
+            </button>
+            <p className="mt-3 text-center text-[11px] text-white/40">
+              @{domains} accounts only
+            </p>
+          </form>
         ) : (
           <div className="space-y-2 text-sm text-white/55">
-            <p>Sign-in is not configured on this server.</p>
+            <p>Google sign-in is not configured on this server.</p>
             <p className="text-xs text-white/40">
-              Production needs AUTH_SECRET plus RESEND_API_KEY or Google OAuth credentials in Vercel env.
+              Admin: run <code className="text-white/60">bash scripts/setup-google-oauth.sh</code> then redeploy.
             </p>
           </div>
         )}

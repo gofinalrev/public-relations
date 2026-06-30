@@ -1,0 +1,59 @@
+X POST — CNC machinist / Willemin (2 images)
+============================================
+
+FILES (lossless jpegtran, .jpg)
+  assets/x-posts/cnc-machinist-willemin/willemin-coolant-cut.jpg   (133 KB, was 138 KB)
+  assets/x-posts/cnc-machinist-willemin/machinist-at-willemin.jpg  (114 KB, was 118 KB)
+
+POST ORDER: machinist-at-willemin.jpg first, willemin-coolant-cut.jpg second (human → payoff cut)
+
+---
+
+PRIMARY (recommended):
+
+new machinist on the willemin.
+
+sendcutsend gets you flat parts fast. oshcut gets you plates cut. cool.
+
+someone still has to run the 5-axis when the stack gets real. offsets, probing, holding ±.002 without three email rounds.
+
+berkeley shop. building finalREV so the quote side catches up to this side of the wall.
+
+(278 chars)
+
+---
+
+SHORT ALT (if you want tighter):
+
+hired.
+
+willemin-macodel. flood coolant. real offsets.
+
+we're not another upload-and-pray quote widget. software + actual machinists in berkeley.
+
+(138 chars)
+
+---
+
+IMAGE ALT TEXT
+
+machinist-at-willemin.jpg:
+Machinist at Willemin-Macodel control panel, safety glasses and hearing protection, finalREV sticker on machine.
+
+willemin-coolant-cut.jpg:
+Willemin 5-axis mill cutting with heavy coolant through enclosure window, finalREV branding on control housing.
+
+---
+
+OPTIONAL REPLY (pin or thread beat 2):
+
+if you've ever gotten "we'll confirm tolerance after review" on a simple bracket, you know why we run this in-house.
+
+drop a machine you're learning on. curious what the timeline looks like for everyone else.
+
+---
+
+NOTES
+- no link in main post (X deprioritizes outbound). reply with finalrev.com/quote if engagement is there.
+- product tag: finalREV (shop-floor), not Tooltrace.
+- hashtags: skip or one max (#CNC). machinist X hates hashtag walls.

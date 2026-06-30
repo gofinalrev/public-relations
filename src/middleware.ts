@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth/auth.config";
-import { isAuthConfigured } from "@/lib/auth/allowed-email";
 import {
   cronAuthorized,
   isPublicPath,
@@ -10,10 +9,17 @@ import { NextResponse } from "next/server";
 
 const { auth } = NextAuth(authConfig);
 
+/** Inlined here — Next.js only bundles env vars referenced in middleware.ts */
+function isAuthEnabledInMiddleware(): boolean {
+  return Boolean(
+    process.env.AUTH_SECRET?.trim() && process.env.GOOGLE_CLIENT_ID?.trim(),
+  );
+}
+
 export default auth((req) => {
   const { nextUrl } = req;
   const pathname = nextUrl.pathname;
-  const authRequired = isAuthConfigured({ forEdge: true });
+  const authRequired = isAuthEnabledInMiddleware();
 
   if (pathname.startsWith("/api/cron")) {
     if (cronAuthorized(req)) return NextResponse.next();
