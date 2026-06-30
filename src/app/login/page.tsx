@@ -1,7 +1,6 @@
 import { signIn, auth } from "@/lib/auth";
 import { isGoogleAuthConfigured, getAllowedEmailDomains } from "@/lib/auth/allowed-email";
-import { FinalrevLogo } from "@/components/dashboard/logo";
-import { Button } from "@/components/ui/button";
+import { AuthCard, AuthShell } from "@/components/auth/auth-shell";
 import { redirect } from "next/navigation";
 
 type LoginPageProps = {
@@ -24,54 +23,75 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10 sm:py-14">
-      <div className="glass-panel w-full max-w-[22rem] space-y-7 p-8 sm:max-w-md sm:p-10">
-        <div className="flex flex-col items-center gap-5 text-center">
-          <FinalrevLogo size={44} />
-          <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">PR Dashboard</h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Weekly metrics for social, Tooltrace, and finalREV.
-            </p>
+    <AuthShell>
+      <div className="grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1fr,minmax(0,26rem)] lg:gap-16">
+        <div className="hidden text-center lg:block lg:text-left">
+          <div className="mb-5 flex flex-wrap justify-center gap-2 lg:justify-start">
+            {["Social metrics", "Tooltrace funnel", "Weekly briefs"].map((tag) => (
+              <span
+                key={tag}
+                className="rounded-sm border border-white/[0.12] bg-black/45 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-white/60 backdrop-blur-sm"
+              >
+                {tag}
+              </span>
+            ))}
           </div>
+          <h2 className="text-4xl font-black leading-[0.95] tracking-tight text-white xl:text-5xl">
+            PR metrics.
+            <br />
+            <span className="text-primary">One dashboard.</span>
+          </h2>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-white/60">
+            Weekly performance across social, Tooltrace, and finalREV — built for the team.
+          </p>
         </div>
 
-        {params.error === "AccessDenied" && (
-          <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-center text-sm text-destructive">
-            Access denied — sign in with an approved @{domains} account.
-          </p>
-        )}
-
-        {configured ? (
-          <form action={signInWithGoogle} className="space-y-3">
-            <Button
-              type="submit"
-              variant="outline"
-              size="lg"
-              className="h-11 w-full gap-2.5 border-foreground/12 bg-card text-foreground shadow-sm hover:bg-muted/60"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">
-              Team access only · <span className="font-medium text-foreground">@{domains}</span>
+        <AuthCard>
+        <div className="space-y-6">
+          <div className="space-y-2 text-center sm:text-left">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-primary/80">
+              PR Dashboard
             </p>
-          </form>
-        ) : (
-          <p className="text-center text-sm text-muted-foreground">
-            Sign-in is not configured on this environment.
-          </p>
-        )}
-      </div>
+            <h1 className="text-3xl font-black tracking-tight text-white">Welcome back</h1>
+            <p className="text-sm leading-relaxed text-white/55">
+              Sign in with your <span className="font-medium text-white/80">@{domains}</span> Google account.
+            </p>
+          </div>
 
-      <p className="mt-8 text-xs text-muted-foreground/70">pr.finalrev.com</p>
-    </div>
+          {params.error === "AccessDenied" && (
+            <p className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2.5 text-center text-sm text-red-300">
+              Access denied — approved @{domains} accounts only.
+            </p>
+          )}
+
+          {configured ? (
+            <form action={signInWithGoogle} className="space-y-4">
+              <button
+                type="submit"
+                className="auth-google-btn group flex h-12 w-full items-center justify-center gap-2.5 rounded-lg border border-white/12 bg-white/[0.04] text-sm font-semibold text-white transition-all duration-300 hover:border-primary/35 hover:bg-white/[0.07] hover:shadow-[0_0_28px_-6px_rgba(204,255,0,0.35)] active:scale-[0.99]"
+              >
+                <GoogleIcon />
+                Continue with Google
+              </button>
+              <p className="text-center text-xs text-white/40">
+                Team access only · encrypted session
+              </p>
+            </form>
+          ) : (
+            <p className="text-center text-sm text-white/50">
+              Sign-in is not configured on this environment.
+            </p>
+          )}
+        </div>
+      </AuthCard>
+      </div>
+    </AuthShell>
   );
 }
 
 function GoogleIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden className="shrink-0">
       <path
         fill="#4285F4"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
