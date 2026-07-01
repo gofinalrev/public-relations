@@ -1,3 +1,5 @@
+import { isSupabaseAuthConfigured } from "@/lib/supabase/env";
+
 export function getAllowedEmailDomains(): string[] {
   const raw = process.env.AUTH_ALLOWED_DOMAINS?.trim() || "finalrev.com";
   return raw
@@ -17,16 +19,12 @@ export function isAllowedEmail(email: string | null | undefined): boolean {
   return getAllowedEmailDomains().some((d) => lower.endsWith(`@${d}`));
 }
 
-export function isGoogleAuthConfigured(options?: { forEdge?: boolean }): boolean {
-  const hasSecret = Boolean(process.env.AUTH_SECRET?.trim());
-  const hasClientId = Boolean(process.env.GOOGLE_CLIENT_ID?.trim());
-  if (options?.forEdge) {
-    return hasSecret && hasClientId;
-  }
-  return Boolean(hasSecret && hasClientId && process.env.GOOGLE_CLIENT_SECRET?.trim());
+/** Same Supabase Google OAuth as finalrev.com — no custom Google Cloud OAuth client. */
+export function isAuthConfigured(): boolean {
+  return isSupabaseAuthConfigured();
 }
 
-/** Google OAuth is the only sign-in method. */
-export function isAuthConfigured(options?: { forEdge?: boolean }): boolean {
-  return isGoogleAuthConfigured(options);
+/** @deprecated use isAuthConfigured */
+export function isGoogleAuthConfigured(): boolean {
+  return isSupabaseAuthConfigured();
 }

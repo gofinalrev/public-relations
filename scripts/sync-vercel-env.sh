@@ -14,15 +14,10 @@ fi
 
 # Keys the PR hub needs in production. Empty values are skipped.
 KEYS=(
-  AUTH_SECRET
-  RESEND_API_KEY
-  AUTH_EMAIL_FROM
-  WEEKLY_BRIEF_FROM
-  GOOGLE_CLIENT_ID
-  GOOGLE_CLIENT_SECRET
+  NEXT_PUBLIC_SUPABASE_URL
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   AUTH_ALLOWED_DOMAINS
-  AUTH_ALLOW_EMAILS
-  APP_PUBLIC_URL
+  RESEND_API_KEY
   TURSO_DATABASE_URL
   TURSO_AUTH_TOKEN
   GOOGLE_GENERATIVE_AI_API_KEY
@@ -80,4 +75,4 @@ npx vercel env rm AUTH_URL production --scope "$SCOPE" --yes 2>/dev/null || true
 echo ""
 echo "Synced $SYNCED variables. Redeploy: npm run deploy"
 echo ""
-echo "Sign-in: Google OAuth only. Run: bash scripts/setup-google-oauth.sh"
+echo "Sign-in: Supabase Google (same as finalrev.com). Run: npm run setup:google"
