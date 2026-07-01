@@ -1,58 +1,29 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { stealthNotFound } from "@/lib/auth/stealth-response";
-import {
-  cronAuthorized,
-  isPublicPath,
-  networkOnlyGate,
-} from "@/lib/auth/network-gate";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { isAuthConfigured } from "@/lib/auth/allowed-email";
+import { middlewareHandler, type PrHubSession } from "@/lib/auth/middleware-handler";
 
-function isAuthEnabled(): boolean {
-  return Boolean(process.env.AUTH_SECRET?.trim() && process.env.GOOGLE_CLIENT_ID?.trim());
+async function sessionFromRequest(req: NextRequest): Promise<PrHubSession> {
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET,
+    secureCookie: process.env.NODE_ENV === "production",
+  });
+  if (!token?.email) return null;
+  return {
+    user: {
+      email: token.email as string,
+      name: (token.name as string | null) ?? null,
+      image: (token.picture as string | null) ?? null,
+    },
+    shopAdmin: Boolean(token.shopAdmin),
+  };
 }
 
-function hasAccess(session: { shopAdmin?: boolean } | null | undefined): boolean {
-  return Boolean(session?.shopAdmin);
+export default async function middleware(req: NextRequest) {
+  const session = isAuthConfigured() ? await sessionFromRequest(req) : null;
+  return middlewareHandler(req, session);
 }
-
-export default auth((req) => {
-  const { nextUrl } = req;
-  const pathname = nextUrl.pathname;
-
-  if (pathname.startsWith("/api/cron")) {
-    if (cronAuthorized(req)) return NextResponse.next();
-    if (isAuthEnabled() && hasAccess(req.auth)) return NextResponse.next();
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const denied = networkOnlyGate(req, { authEnabled: isAuthEnabled() });
-  if (denied) return denied;
-
-  if (!isAuthEnabled()) {
-    if (process.env.NODE_ENV === "development") {
-      return NextResponse.next();
-    }
-    return stealthNotFound(req);
-  }
-
-  if (isPublicPath(pathname)) {
-    return NextResponse.next();
-  }
-
-  if (hasAccess(req.auth)) {
-    return NextResponse.next();
-  }
-
-  // Signed in but not shop_admin — look like nothing is here
-  if (req.auth?.user) {
-    return stealthNotFound(req);
-  }
-
-  // Not signed in — one click through Google (same account as finalrev)
-  const signIn = new URL("/api/auth/signin/google", nextUrl.origin);
-  signIn.searchParams.set("callbackUrl", pathname + nextUrl.search);
-  return NextResponse.redirect(signIn);
-});
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt).*)"],
