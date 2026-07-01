@@ -41,7 +41,7 @@ export function networkOnlyGate(
 }
 
 export function isPublicPath(pathname: string): boolean {
-  return pathname === "/sign-in" || pathname.startsWith("/auth/callback");
+  return pathname === "/sign-in" || pathname.startsWith("/api/auth/");
 }
 
 export function cronAuthorized(request: NextRequest): boolean {

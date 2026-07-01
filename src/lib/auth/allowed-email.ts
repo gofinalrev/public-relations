@@ -1,5 +1,3 @@
-import { isSupabaseAuthConfigured } from "@/lib/supabase/env";
-
 export function getAllowedEmailDomains(): string[] {
   const raw = process.env.AUTH_ALLOWED_DOMAINS?.trim() || "finalrev.com";
   return raw
@@ -19,12 +17,15 @@ export function isAllowedEmail(email: string | null | undefined): boolean {
   return getAllowedEmailDomains().some((d) => lower.endsWith(`@${d}`));
 }
 
-/** Same Supabase Google OAuth as finalrev.com — no custom Google Cloud OAuth client. */
 export function isAuthConfigured(): boolean {
-  return isSupabaseAuthConfigured();
+  return Boolean(
+    process.env.AUTH_SECRET?.trim() &&
+      process.env.GOOGLE_CLIENT_ID?.trim() &&
+      process.env.GOOGLE_CLIENT_SECRET?.trim(),
+  );
 }
 
 /** @deprecated use isAuthConfigured */
 export function isGoogleAuthConfigured(): boolean {
-  return isSupabaseAuthConfigured();
+  return isAuthConfigured();
 }

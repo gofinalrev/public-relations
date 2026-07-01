@@ -19,7 +19,7 @@ Copy `.env.example` → `.env.local`. Required for a full experience:
 
 | Variable | Purpose |
 |----------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Google sign-in (same Supabase project as finalrev.com, `@finalrev.com` only) |
+| `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SECRET` | Shop-admin-only access (`shop_admin` role in finalrev Supabase) |
 | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Shared weekly data |
 | `POSTHOG_PERSONAL_API_KEY`, `POSTHOG_*` | Tooltrace + finalREV analytics |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Caption Studio |

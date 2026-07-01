@@ -1,7 +1,5 @@
-import { hasPrHubAccess } from "@/lib/auth/pr-access";
-import { createClient } from "@/lib/supabase/server";
-import { isSupabaseAuthConfigured } from "@/lib/supabase/env";
-import { GoogleSignIn } from "@/components/auth/google-sign-in";
+import { auth, signIn } from "@/lib/auth";
+import { isAuthConfigured } from "@/lib/auth/allowed-email";
 import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -12,24 +10,30 @@ export const metadata = {
 };
 
 export default async function SignInPage() {
-  if (!isSupabaseAuthConfigured()) {
+  if (!isAuthConfigured()) {
     notFound();
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (hasPrHubAccess(user)) {
+  const session = await auth();
+  if (session?.shopAdmin) {
     redirect("/");
+  }
+
+  async function signInWithGoogle() {
+    "use server";
+    await signIn("google", { redirectTo: "/" });
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#fafafa] px-6">
-      <div className="w-full max-w-sm space-y-4 text-center">
-        <GoogleSignIn autoRedirect={false} />
-      </div>
+      <form action={signInWithGoogle} className="w-full max-w-sm">
+        <button
+          type="submit"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[#dadce0] bg-white px-4 text-sm font-medium text-[#3c4043] shadow-sm hover:bg-[#f8f9fa]"
+        >
+          Continue with Google
+        </button>
+      </form>
     </main>
   );
 }
