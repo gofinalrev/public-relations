@@ -20,7 +20,7 @@ export async function UserMenu() {
     "use server";
     const supabase = await createClient();
     await supabase.auth.signOut();
-    redirect("/login");
+    redirect("/sign-in");
   }
 
   return (

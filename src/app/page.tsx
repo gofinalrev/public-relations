@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getDashboardData, getAppSetting, getMetricoolPdfMeta, listMetricoolPdfMetas, setAppSetting } from "@/lib/db";
 import { getCurrentWeekKey } from "@/lib/weeks";
@@ -50,6 +51,11 @@ import type { ActionItem } from "@/lib/action-items";
 import { WeeklyChecklist } from "@/components/dashboard/weekly-checklist";
 import { parsePostHighlights } from "@/lib/post-highlights";
 import { Play, MousePointerClick, Users, Crown } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "finalREV · PR Dashboard",
+  robots: { index: false, follow: false },
+};
 
 type PageProps = {
   searchParams: Promise<{ week?: string; view?: string }>;

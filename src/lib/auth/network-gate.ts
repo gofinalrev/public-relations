@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { stealthNotFound } from "@/lib/auth/stealth-response";
 import {
   clientIpFromHeaders,
   isNetworkOnlyMode,
@@ -19,13 +20,12 @@ export function networkOnlyGate(
     return null;
   }
 
-  // Always allow sign-in routes — never block the login page behind network-only.
   if (isPublicPath(request.nextUrl.pathname)) {
     return null;
   }
 
   if (isVercelDeployment()) {
-    return denyNetwork(request);
+    return stealthNotFound(request);
   }
 
   const ip = clientIpFromHeaders(
@@ -37,28 +37,11 @@ export function networkOnlyGate(
     return null;
   }
 
-  return denyNetwork(request);
-}
-
-function denyNetwork(request: NextRequest): NextResponse {
-  const acceptsHtml = request.headers.get("accept")?.includes("text/html");
-
-  if (acceptsHtml) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  return NextResponse.json(
-    { error: "Forbidden", message: "Sign in required." },
-    { status: 403 },
-  );
+  return stealthNotFound(request);
 }
 
 export function isPublicPath(pathname: string): boolean {
-  return (
-    pathname === "/login" ||
-    pathname.startsWith("/auth/") ||
-    pathname.startsWith("/api/auth/")
-  );
+  return pathname === "/sign-in" || pathname.startsWith("/auth/callback");
 }
 
 export function cronAuthorized(request: NextRequest): boolean {

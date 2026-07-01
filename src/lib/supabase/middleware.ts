@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isAllowedEmail } from "@/lib/auth/allowed-email";
+import { hasPrHubAccess } from "@/lib/auth/pr-access";
+import { stealthNotFound } from "@/lib/auth/stealth-response";
 import {
   cronAuthorized,
   isPublicPath,
@@ -48,24 +49,19 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user && !isAllowedEmail(user.email)) {
+  if (user && !hasPrHubAccess(user)) {
     await supabase.auth.signOut();
-    const login = new URL("/login", request.url);
-    login.searchParams.set("error", "AccessDenied");
-    return NextResponse.redirect(login);
   }
 
   if (isPublicPath(pathname)) {
-    if (user && pathname === "/login") {
+    if (user && hasPrHubAccess(user) && pathname === "/sign-in") {
       return NextResponse.redirect(new URL("/", request.url));
     }
     return response;
   }
 
-  if (!user) {
-    const login = new URL("/login", request.url);
-    login.searchParams.set("callbackUrl", pathname + request.nextUrl.search);
-    return NextResponse.redirect(login);
+  if (!user || !hasPrHubAccess(user)) {
+    return stealthNotFound(request);
   }
 
   return response;
@@ -83,5 +79,5 @@ async function getRequestUser(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return user && isAllowedEmail(user.email) ? user : null;
+  return user && hasPrHubAccess(user) ? user : null;
 }

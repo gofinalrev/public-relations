@@ -41,7 +41,9 @@ for legacy in AUTH_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET AUTH_URL; do
 done
 
 echo ""
-echo "Ensure Supabase redirect URLs include:"
+echo "Team entry (bookmark, do not link publicly): https://pr.finalrev.com/sign-in"
+echo ""
+echo "Supabase → Auth → URL Configuration → Redirect URLs must include:"
 echo "  https://pr.finalrev.com/auth/callback"
 echo "  http://localhost:8787/auth/callback"
 echo ""
@@ -51,4 +53,4 @@ echo "Redeploying…"
 npx vercel deploy --prod --yes --scope finalrev
 
 echo ""
-echo "Done. Sign in at https://pr.finalrev.com with @finalrev.com Google."
+echo "Done. Shop admins: https://pr.finalrev.com/sign-in — everyone else sees 404."

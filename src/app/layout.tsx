@@ -14,26 +14,9 @@ const siteUrl = process.env.APP_PUBLIC_URL?.trim() || "https://pr.finalrev.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: {
-    default: "finalREV · PR Dashboard",
-    template: "%s · finalREV PR",
-  },
-  description:
-    "Weekly social, Tooltrace, and finalREV metrics for the PR team.",
-  applicationName: "finalREV PR Dashboard",
+  title: "404 Not Found",
+  description: "",
   robots: { index: false, follow: false },
-  openGraph: {
-    title: "finalREV · PR Dashboard",
-    description: "Weekly social, Tooltrace, and finalREV metrics.",
-    siteName: "finalREV",
-    type: "website",
-    locale: "en_US",
-  },
-  twitter: {
-    card: "summary",
-    title: "finalREV · PR Dashboard",
-    description: "Weekly social, Tooltrace, and finalREV metrics.",
-  },
 };
 
 export const viewport: Viewport = {

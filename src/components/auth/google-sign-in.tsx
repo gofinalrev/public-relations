@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseAuthConfigured } from "@/lib/supabase/env";
-import { Button } from "@/components/ui/button";
 
 type GoogleSignInProps = {
-  callbackUrl: string;
   autoRedirect?: boolean;
 };
 
-export function GoogleSignIn({ callbackUrl, autoRedirect = true }: GoogleSignInProps) {
+export function GoogleSignIn({ autoRedirect = false }: GoogleSignInProps) {
   const [loading, setLoading] = useState(false);
   const ready = isSupabaseAuthConfigured();
 
@@ -18,7 +16,7 @@ export function GoogleSignIn({ callbackUrl, autoRedirect = true }: GoogleSignInP
     if (!ready) return;
     setLoading(true);
     const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackUrl)}`;
+    const redirectTo = `${window.location.origin}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -28,36 +26,28 @@ export function GoogleSignIn({ callbackUrl, autoRedirect = true }: GoogleSignInP
     });
     if (error) {
       setLoading(false);
-      window.location.href = `/login?error=OAuthSignin&callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      window.location.href = "/not-found";
     }
   }
 
-  useEffect(() => {
-    if (autoRedirect && ready) {
-      void signInWithGoogle();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot redirect on mount
-  }, [autoRedirect, ready]);
+  if (autoRedirect && ready) {
+    void signInWithGoogle();
+  }
 
   if (!ready) {
-    return (
-      <div className="space-y-2 text-sm text-white/55">
-        <p>Google sign-in is not configured on this server.</p>
-        <p className="text-xs text-white/40">Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.</p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <Button
+    <button
       type="button"
       onClick={() => void signInWithGoogle()}
       disabled={loading}
-      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-lg border border-white/12 bg-white/[0.04] text-sm font-semibold text-white transition-all hover:border-primary/35 hover:bg-white/[0.07] hover:shadow-[0_0_28px_-6px_rgba(204,255,0,0.35)] active:scale-[0.99]"
+      className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[#dadce0] bg-white px-4 text-sm font-medium text-[#3c4043] shadow-sm hover:bg-[#f8f9fa] disabled:opacity-60"
     >
       <GoogleIcon />
-      {loading ? "Redirecting to Google…" : "Sign in with Google"}
-    </Button>
+      {loading ? "Redirecting…" : "Continue with Google"}
+    </button>
   );
 }
 
