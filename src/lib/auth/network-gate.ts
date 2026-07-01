@@ -12,36 +12,23 @@ export function networkOnlyGate(
   request: NextRequest,
   options?: { authEnabled?: boolean },
 ): NextResponse | null {
-  if (!isNetworkOnlyMode()) {
-    return null;
-  }
+  if (!isNetworkOnlyMode()) return null;
+  if (options?.authEnabled) return null;
+  if (isPublicPath(request.nextUrl.pathname)) return null;
 
-  if (options?.authEnabled) {
-    return null;
-  }
-
-  if (isPublicPath(request.nextUrl.pathname)) {
-    return null;
-  }
-
-  if (isVercelDeployment()) {
-    return stealthNotFound(request);
-  }
+  if (isVercelDeployment()) return stealthNotFound(request);
 
   const ip = clientIpFromHeaders(
     request.headers.get("x-forwarded-for"),
     request.headers.get("x-real-ip"),
   );
-
-  if (ip === "unknown" || isPrivateOrLocalIp(ip)) {
-    return null;
-  }
+  if (ip === "unknown" || isPrivateOrLocalIp(ip)) return null;
 
   return stealthNotFound(request);
 }
 
 export function isPublicPath(pathname: string): boolean {
-  return pathname === "/sign-in" || pathname.startsWith("/api/auth/");
+  return pathname.startsWith("/api/auth/");
 }
 
 export function cronAuthorized(request: NextRequest): boolean {

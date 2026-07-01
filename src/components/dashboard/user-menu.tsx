@@ -14,7 +14,7 @@ export async function UserMenu() {
 
   async function handleSignOut() {
     "use server";
-    await signOut({ redirectTo: "/not-found" });
+    await signOut({ redirectTo: "/" });
   }
 
   return (
