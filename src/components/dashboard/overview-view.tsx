@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { OverviewViewProps } from "@/lib/overview-summary";
 import type { WeeklyIntelligence } from "@/lib/intelligence/types";
+import type { ReportMetricQuality } from "@/lib/metric-trust";
+import { resolveProSubsDisplay } from "@/lib/metric-trust";
 import { pdfDownloadUrl, pdfViewUrl } from "@/lib/overview-summary";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { OverviewTrendChart } from "@/components/dashboard/overview-trend-chart";
@@ -11,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { OverviewSummaryCard } from "@/components/dashboard/overview-summary-card";
 import { WeeklyChecklist } from "@/components/dashboard/weekly-checklist";
+import { DataTrustBanner } from "@/components/dashboard/data-trust-banner";
 import { parsePostHighlights } from "@/lib/post-highlights";
 import {
   Play,
@@ -43,7 +46,9 @@ export function OverviewView({
   postHighlightsJson,
   intelligence,
   postsLogged = 0,
-}: OverviewViewProps & { intelligence: WeeklyIntelligence; postsLogged?: number }) {
+  metricQuality,
+}: OverviewViewProps & { intelligence: WeeklyIntelligence; postsLogged?: number; metricQuality: ReportMetricQuality }) {
+  const proSubs = resolveProSubsDisplay(metrics.subs, metricQuality);
   const periodLink =
     weekStart !== context.weekKey ? `/?view=period&week=${weekStart}` : "/?view=period";
   const cadUploads = summary.finalrevCadUploads ?? 0;
@@ -85,6 +90,8 @@ export function OverviewView({
 
       <WeeklyChecklist hasPdf={Boolean(pdfMeta)} postsLogged={postsLogged || parsePostHighlights(postHighlightsJson).length} />
 
+      <DataTrustBanner quality={metricQuality} context={context} />
+
       {!hasData && (
         <Card className="border-dashed border-foreground/15 bg-muted/20">
           <CardContent className="flex flex-col items-center gap-3 px-6 py-10 text-center">
@@ -112,7 +119,7 @@ export function OverviewView({
         />
       )}
 
-      {hasData && <IntelligenceOverview intel={intelligence} />}
+      {hasData && <IntelligenceOverview intel={intelligence} metricQuality={metricQuality} />}
 
       {hasData && (
         <section>
@@ -120,7 +127,7 @@ export function OverviewView({
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <MetricCard
               label="Video views"
-              sublabel="Social"
+              sublabel="Metricool · social"
               value={metrics.views}
               previous={showDelta ? (prev?.views ?? null) : null}
               comparisonLabel={context.comparisonLabel}
@@ -129,7 +136,7 @@ export function OverviewView({
             />
             <MetricCard
               label="Reach + clicks"
-              sublabel="Social"
+              sublabel="Metricool · social"
               value={metrics.engagement}
               previous={showDelta ? (prev?.engagement ?? null) : null}
               comparisonLabel={context.comparisonLabel}
@@ -138,7 +145,7 @@ export function OverviewView({
             />
             <MetricCard
               label="Tooltrace visitors"
-              sublabel="tooltrace.ai"
+              sublabel="PostHog · unique"
               value={metrics.visitors}
               previous={showDelta ? (prev?.visitors ?? null) : null}
               comparisonLabel={context.comparisonLabel}
@@ -147,17 +154,20 @@ export function OverviewView({
             />
             <MetricCard
               label="Pro subscriptions"
-              sublabel="Tooltrace Pro"
+              sublabel={proSubs.sublabel}
               value={metrics.subs}
-              previous={showDelta ? (prev?.subs ?? null) : null}
-              highlight
+              displayValue={proSubs.displayValue}
+              hideDelta={!proSubs.showDelta}
+              unavailable={proSubs.unavailable}
+              previous={showDelta && proSubs.showDelta ? (prev?.subs ?? null) : null}
+              highlight={!proSubs.unavailable}
               comparisonLabel={context.comparisonLabel}
               icon={Crown}
               variant="compact"
             />
             <MetricCard
               label="STEP uploads"
-              sublabel="finalrev.com"
+              sublabel="PostHog · finalrev.com"
               value={cadUploads}
               previous={null}
               comparisonLabel={context.comparisonLabel}

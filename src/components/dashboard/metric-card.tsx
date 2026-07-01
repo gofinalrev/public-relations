@@ -13,6 +13,11 @@ type MetricCardProps = {
   historicalContext?: string;
   periodHint?: string;
   variant?: "default" | "compact";
+  /** Override formatted number (e.g. "—" when metric unavailable) */
+  displayValue?: string;
+  /** Hide WoW delta even when previous exists */
+  hideDelta?: boolean;
+  unavailable?: boolean;
 };
 
 export function MetricCard({
@@ -26,9 +31,12 @@ export function MetricCard({
   historicalContext,
   periodHint = "This period only",
   variant = "default",
+  displayValue,
+  hideDelta,
+  unavailable,
 }: MetricCardProps) {
   const compact = variant === "compact";
-  const delta = formatDelta(value, previous);
+  const delta = hideDelta || unavailable ? { value: "", positive: null } : formatDelta(value, previous);
 
   return (
     <div
@@ -36,7 +44,8 @@ export function MetricCard({
         "group relative overflow-hidden rounded-xl border border-foreground/[0.08] bg-card/80 backdrop-blur-sm transition-all duration-300",
         compact ? "p-3 sm:p-4" : "p-4 sm:p-5",
         !compact && "hover:border-primary/30 hover:shadow-[0_0_32px_-8px_hsl(var(--primary)/0.25)]",
-        highlight && "border-primary/40 bg-primary/[0.06] lime-glow",
+        highlight && !unavailable && "border-primary/40 bg-primary/[0.06] lime-glow",
+        unavailable && "border-foreground/[0.06] bg-muted/20 opacity-90",
       )}
     >
       <div
@@ -87,7 +96,7 @@ export function MetricCard({
             highlight && "text-primary",
           )}
         >
-          {formatNumber(value)}
+          {displayValue ?? formatNumber(value)}
         </p>
         <DeltaBadge delta={delta} comparisonLabel={comparisonLabel} compact={compact} />
       </div>

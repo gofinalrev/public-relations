@@ -33,7 +33,10 @@ import { isAuthConfigured } from "@/lib/auth/allowed-email";
 import { isPostHogConfigured } from "@/lib/posthog/config";
 import { getIntegrationStatus, getIntegrationWarnings, getIntegrationOpsNotes } from "@/lib/integrations";
 import { OpsLogSink } from "@/components/dashboard/ops-log-sink";
-import { executiveSubsLabel, logOps } from "@/lib/ops-log";
+import { logOps } from "@/lib/ops-log";
+import { buildReportMetricQuality } from "@/lib/metric-trust-server";
+import { resolveProSubsDisplay } from "@/lib/metric-trust";
+import { DataTrustBanner } from "@/components/dashboard/data-trust-banner";
 import { isGeminiConfigured } from "@/lib/gemini/config";
 import { buildCaptionWeekContext } from "@/lib/gemini/caption-prompt";
 import { isMetricoolConfigured } from "@/lib/metricool/config";
@@ -119,7 +122,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const suggestedPin = getSuggestedPinUrl();
 
   const integrationStatus = getIntegrationStatus(report);
-  const integrationWarnings = getIntegrationWarnings(integrationStatus);
+  const metricQuality = buildReportMetricQuality(report);
+  const proSubsDisplay = resolveProSubsDisplay(metrics.subs, metricQuality);
+  const integrationWarnings = getIntegrationWarnings(integrationStatus, metricQuality);
   const integrationOpsNotes = getIntegrationOpsNotes(integrationStatus);
   for (const note of integrationOpsNotes) {
     logOps(note);
@@ -192,10 +197,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             postHighlightsJson={report?.post_highlights_json}
             intelligence={intelligence}
             postsLogged={postsLogged}
+            metricQuality={metricQuality}
           />
         ) : activeView === "period" ? (
           <>
             <WeeklyChecklist hasPdf={Boolean(pdfMeta)} postsLogged={postsLogged} />
+            <DataTrustBanner quality={metricQuality} context={periodContext} />
             <PeriodScopeBanner context={periodContext} variant="compact" />
 
             <MetricoolPdfUpload
@@ -220,7 +227,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
                   label="Video views"
-                  sublabel="Social"
+                  sublabel="Metricool · social"
                   value={metrics.views}
                   previous={periodContext.showWeekOverWeek ? (prev?.views ?? null) : null}
                   comparisonLabel={periodContext.comparisonLabel}
@@ -233,7 +240,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 />
                 <MetricCard
                   label="Reach + clicks"
-                  sublabel="Social"
+                  sublabel="Metricool · social"
                   value={metrics.engagement}
                   previous={periodContext.showWeekOverWeek ? (prev?.engagement ?? null) : null}
                   comparisonLabel={periodContext.comparisonLabel}
@@ -246,6 +253,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 />
                 <MetricCard
                   label="Tooltrace visitors"
+                  sublabel="PostHog · unique"
                   value={metrics.visitors}
                   previous={periodContext.showWeekOverWeek ? (prev?.visitors ?? null) : null}
                   comparisonLabel={periodContext.comparisonLabel}
@@ -258,17 +266,21 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 />
                 <MetricCard
                   label="Pro subscriptions"
-                  sublabel={executiveSubsLabel()}
+                  sublabel={proSubsDisplay.sublabel}
                   value={metrics.subs}
-                  previous={periodContext.showWeekOverWeek ? (prev?.subs ?? null) : null}
-                  highlight
+                  displayValue={proSubsDisplay.displayValue}
+                  hideDelta={!proSubsDisplay.showDelta}
+                  unavailable={proSubsDisplay.unavailable}
+                  previous={periodContext.showWeekOverWeek && proSubsDisplay.showDelta ? (prev?.subs ?? null) : null}
+                  highlight={!proSubsDisplay.unavailable}
                   comparisonLabel={periodContext.comparisonLabel}
                   icon={Crown}
                   variant="compact"
-                  historicalContext={historicalContext(
-                    analytics.trailing4Avg.subs,
-                    analytics.trailing12Sum.subs,
-                  )}
+                  historicalContext={
+                    proSubsDisplay.showDelta
+                      ? historicalContext(analytics.trailing4Avg.subs, analytics.trailing12Sum.subs)
+                      : undefined
+                  }
                 />
               </div>
             </section>

@@ -53,14 +53,14 @@ export function buildContentPnl(input: IntelligenceInput): ContentPnl {
   const pipelineHigh = Math.round(quoteHigh + proValue);
 
   let headline: string;
-  if (pipelineHigh > 0 && stepUploads > 0) {
-    headline = `Estimated quote pipeline from STEP uploads: $${formatNumber(pipelineLow)}–$${formatNumber(pipelineHigh)} (model-based)`;
-  } else if (views > 0 && !linked) {
-    headline = `${formatNumber(views)} @gofinalrev views · ${formatNumber(visitors)} Tooltrace visitors (separate track)`;
+  if (views > 0 && !linked) {
+    headline = `${formatNumber(views)} @gofinalrev views · ${formatNumber(visitors)} Tooltrace visitors (separate tracks)`;
   } else if (views > 0) {
     headline = `${formatNumber(views)} social views · ${formatNumber(visitors)} Tooltrace visitors`;
+  } else if (visitors > 0) {
+    headline = `${formatNumber(visitors)} Tooltrace visitors this period`;
   } else {
-    headline = "Import data to see performance summary";
+    headline = "Import Metricool PDF and sync PostHog to see performance summary";
   }
 
   return {

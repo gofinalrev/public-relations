@@ -3,6 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/utils";
 import { filterExecutiveInsights } from "@/lib/ops-log";
+import { buildReportMetricQuality } from "@/lib/metric-trust-server";
+import {
+  shouldShowActivationRate,
+  shouldShowConversionRate,
+} from "@/lib/metric-trust";
 import { Brain, ArrowRight } from "lucide-react";
 
 type FunnelData = {
@@ -62,6 +67,10 @@ export function PostHogInsightsPanel({ report }: PostHogInsightsPanelProps) {
   const insights = filterExecutiveInsights(parseInsights(report.posthog_insights));
   const funnel = funnelData.funnel;
   const analysis = funnelData.analysis;
+  const quality = buildReportMetricQuality(report);
+  const funnelInferred = Boolean(funnelData.funnelUsedInference);
+  const showConversion = shouldShowConversionRate(quality);
+  const showActivation = shouldShowActivationRate(quality, funnelData);
 
   return (
     <Card className="border-primary/15">
@@ -71,10 +80,15 @@ export function PostHogInsightsPanel({ report }: PostHogInsightsPanelProps) {
           Tooltrace site metrics
         </CardTitle>
         <CardDescription>
-          Tooltrace.ai funnel only (excludes finalrev.com)
+          Unique visitors and funnel from PostHog (tooltrace.ai, project 167207)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {funnelInferred && (
+          <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+            Upload and Generate counts are estimated (not directly measured). Use Download CAD and Pro subs for reliable funnel steps.
+          </p>
+        )}
         {funnel && (
           <div>
             <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -97,14 +111,14 @@ export function PostHogInsightsPanel({ report }: PostHogInsightsPanelProps) {
               <ArrowRight className="mx-auto hidden size-3 rotate-90 text-muted-foreground sm:mx-0 sm:block sm:rotate-0" />
               <FunnelStep label="Download CAD" value={funnel.download_cad} />
               <ArrowRight className="mx-auto hidden size-3 rotate-90 text-muted-foreground sm:mx-0 sm:block sm:rotate-0" />
-              <FunnelStep label="Pro signup" value={report.posthog_subscriptions} highlight />
+              <FunnelStep label="Pro signup" value={report.posthog_subscriptions} highlight hint={quality.proSubsSource !== "stripe" ? "unverified" : undefined} />
             </div>
-            {analysis && (
+            {(showConversion || showActivation) && (
               <div className="mt-3 flex flex-wrap gap-2">
-                {analysis.conversionRate !== null && (
-                  <Badge variant="default">{analysis.conversionRate.toFixed(1)}% visitor → sub</Badge>
+                {showConversion && analysis?.conversionRate != null && (
+                  <Badge variant="default">{analysis.conversionRate.toFixed(1)}% visitor → sub (Stripe)</Badge>
                 )}
-                {analysis.activationRate !== null && (
+                {showActivation && analysis?.activationRate != null && (
                   <Badge variant="secondary">{analysis.activationRate.toFixed(1)}% visitor → upload</Badge>
                 )}
               </div>

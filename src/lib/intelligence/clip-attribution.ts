@@ -27,9 +27,9 @@ export function buildClipAttribution(input: IntelligenceInput): ClipAttribution[
       const roiScore =
         post.views > 0 ? (estimatedVisitors / post.views) * 1000 + (post.likes / post.views) * 100 : 0;
 
-      let payoffNote = "Share of Tooltrace-tagged post views this period.";
+      let payoffNote = "Modeled share of Tooltrace-tagged post views this period (not measured per clip).";
       if (post.views >= 1000 && estimatedVisitors >= 10) {
-        payoffNote = `~${formatNumber(estimatedVisitors)} visitors (estimated share among Tooltrace posts only).`;
+        payoffNote = `~${formatNumber(estimatedVisitors)} visitors (modeled share among Tooltrace posts only — not measured).`;
       } else if (post.views >= 500 && estimatedVisitors < 5) {
         payoffNote = "High views, low site traffic on this Tooltrace post. Check CTA and landing page.";
       } else if (post.experiment) {

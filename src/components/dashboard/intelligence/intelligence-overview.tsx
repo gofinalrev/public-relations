@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { WeeklyIntelligence } from "@/lib/intelligence/types";
+import type { ReportMetricQuality } from "@/lib/metric-trust";
+import { resolveProSubsDisplay } from "@/lib/metric-trust";
 import { parallelTracksNote } from "@/lib/intelligence/content-focus";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,11 +23,19 @@ import {
   Zap,
 } from "lucide-react";
 
-export function IntelligenceOverview({ intel }: { intel: WeeklyIntelligence }) {
+export function IntelligenceOverview({
+  intel,
+  metricQuality,
+}: {
+  intel: WeeklyIntelligence;
+  metricQuality: ReportMetricQuality;
+}) {
+  const proSubs = resolveProSubsDisplay(intel.contentPnl.proSubs, metricQuality);
+
   return (
     <div className="space-y-4">
       {intel.warRoom?.active && <WarRoomBanner alert={intel.warRoom} />}
-      <ContentPnlCard pnl={intel.contentPnl} />
+      <ContentPnlCard pnl={intel.contentPnl} proSubs={proSubs} />
       <FunnelStoryCard story={intel.funnelStory} />
       <div className="grid gap-4 lg:grid-cols-2">
         <BoardNarrativeCard narrative={intel.boardNarrative} />
@@ -79,7 +89,13 @@ function WarRoomBanner({ alert }: { alert: NonNullable<WeeklyIntelligence["warRo
   );
 }
 
-function ContentPnlCard({ pnl }: { pnl: WeeklyIntelligence["contentPnl"] }) {
+function ContentPnlCard({
+  pnl,
+  proSubs,
+}: {
+  pnl: WeeklyIntelligence["contentPnl"];
+  proSubs: ReturnType<typeof resolveProSubsDisplay>;
+}) {
   return (
     <Card className="border-primary/25 bg-primary/[0.03]">
       <CardHeader className="pb-2">
@@ -91,10 +107,10 @@ function ContentPnlCard({ pnl }: { pnl: WeeklyIntelligence["contentPnl"] }) {
       </CardHeader>
       <CardContent>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <PnlStat label="Social views" value={formatNumber(pnl.socialViews)} />
-          <PnlStat label="Tooltrace visitors" value={formatNumber(pnl.tooltraceVisitors)} />
-          <PnlStat label="Pro subs" value={String(pnl.proSubs)} />
-          <PnlStat label="STEP uploads" value={String(pnl.stepUploads)} />
+          <PnlStat label="Social views" value={formatNumber(pnl.socialViews)} source="Metricool PDF" />
+          <PnlStat label="Tooltrace visitors" value={formatNumber(pnl.tooltraceVisitors)} source="PostHog" />
+          <PnlStat label="Pro subs" value={proSubs.displayValue} source={proSubs.sublabel} unavailable={proSubs.unavailable} />
+          <PnlStat label="STEP uploads" value={String(pnl.stepUploads)} source="PostHog · finalrev.com" />
         </div>
         {pnl.bestRoiClip && (
           <p className="mt-3 text-sm text-muted-foreground">
@@ -110,11 +126,22 @@ function ContentPnlCard({ pnl }: { pnl: WeeklyIntelligence["contentPnl"] }) {
   );
 }
 
-function PnlStat({ label, value }: { label: string; value: string }) {
+function PnlStat({
+  label,
+  value,
+  source,
+  unavailable,
+}: {
+  label: string;
+  value: string;
+  source?: string;
+  unavailable?: boolean;
+}) {
   return (
     <div className="border border-foreground/[0.06] bg-card/50 p-3">
       <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-1 text-xl font-bold tabular-nums">{value}</p>
+      <p className={`mt-1 text-xl font-bold tabular-nums ${unavailable ? "text-muted-foreground" : ""}`}>{value}</p>
+      {source && <p className="mt-0.5 text-[10px] text-muted-foreground">{source}</p>}
     </div>
   );
 }
@@ -301,7 +328,7 @@ function ClipAttributionCard({ clips }: { clips: WeeklyIntelligence["clipAttribu
               <Badge variant="secondary" className="text-[9px] capitalize">{clip.platform}</Badge>
             </div>
             <p className="mt-1 text-muted-foreground">
-              {formatNumber(clip.views)} views · ~{formatNumber(clip.estimatedVisitors)} Tooltrace visitors
+              {formatNumber(clip.views)} views · ~{formatNumber(clip.estimatedVisitors)} visitors (modeled share, not measured)
             </p>
             <p className="mt-0.5 text-xs text-primary">{clip.payoffNote}</p>
           </div>

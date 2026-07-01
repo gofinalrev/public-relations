@@ -37,7 +37,7 @@ export function buildCompetitivePulse(input: IntelligenceInput): CompetitivePuls
   }
 
   return {
-    headline: "Channel performance vs typical manufacturing accounts (estimated)",
+    headline: "Your channel mix this period (no external benchmark data)",
     yourStrength,
     gap,
     recommendation,

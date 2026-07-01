@@ -4,6 +4,8 @@ import { buildContentPnl } from "./content-pnl";
 import { canAttributeSocialToTooltrace, resolveContentFocus } from "./content-focus";
 import { parseReportBreakdown, parseReportFunnel, shopFloorSignal } from "./context";
 import { platformLabel } from "@/lib/post-highlights";
+import { buildReportMetricQuality } from "@/lib/metric-trust-server";
+import { shouldShowConversionRate } from "@/lib/metric-trust";
 
 export function buildBoardNarrative(input: IntelligenceInput): string {
   const { report, context, posts } = input;
@@ -14,6 +16,7 @@ export function buildBoardNarrative(input: IntelligenceInput): string {
   const pnl = buildContentPnl(input);
   const funnel = parseReportFunnel(report);
   const breakdown = parseReportBreakdown(report);
+  const metricQuality = buildReportMetricQuality(report);
   const topPost = posts.length ? [...posts].sort((a, b) => b.views - a.views)[0] : null;
   const linked = canAttributeSocialToTooltrace(resolveContentFocus(posts));
 
@@ -47,15 +50,19 @@ export function buildBoardNarrative(input: IntelligenceInput): string {
     para1 = `For ${period}, social and product metrics are still filling in.`;
   }
 
-  if (pnl.quotePipelineHigh > 0 && pnl.stepUploads > 0) {
-    para1 += ` Estimated quote pipeline from uploads: $${formatNumber(pnl.quotePipelineLow)}–$${formatNumber(pnl.quotePipelineHigh)}.`;
+  if (pnl.stepUploads > 0) {
+    para1 += ` ${formatNumber(pnl.stepUploads)} STEP uploads logged in PostHog.`;
   }
 
   let para2: string;
   if (!linked && report.metricool_video_views > 500) {
     para2 =
       "Social is finalREV shop-floor today; Tooltrace Shorts ship on a separate track. Do not read Tooltrace site traffic as proof of social clip performance yet.";
-  } else if (report.posthog_subscriptions > 0 && (funnel?.analysis?.conversionRate ?? 0) >= 1.5) {
+  } else if (
+    shouldShowConversionRate(metricQuality) &&
+    report.posthog_subscriptions > 0 &&
+    (funnel?.analysis?.conversionRate ?? 0) >= 1.5
+  ) {
     para2 = "Conversion rate acceptable when Tooltrace traffic arrives. Increase volume from top referrers.";
   } else if (linked && report.metricool_video_views > 500 && report.posthog_visitors < 30) {
     para2 = "Social views not converting to site visits. Review CTAs on Tooltrace-tagged posts.";

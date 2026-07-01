@@ -66,14 +66,47 @@ export function getIntegrationOpsNotes(status: IntegrationStatus): string[] {
 }
 
 /** Executive-facing data gaps only — no env keys or integration setup hints. */
-export function getIntegrationWarnings(status: IntegrationStatus): IntegrationWarning[] {
+export function getIntegrationWarnings(
+  status: IntegrationStatus,
+  metricQuality?: import("@/lib/metric-trust").ReportMetricQuality,
+): IntegrationWarning[] {
   const warnings: IntegrationWarning[] = [];
 
   if (!status.hasPdfThisWeek) {
     warnings.push({
       id: "no-pdf",
       level: "warning",
-      message: "No PDF this week — social metrics are empty until import.",
+      message: "No Metricool PDF for this period — social views and reach are empty until import.",
+    });
+  }
+
+  if (status.posthog && !status.hasPostHogThisWeek) {
+    warnings.push({
+      id: "no-posthog-sync",
+      level: "warning",
+      message: "Tooltrace visitors not synced for this period yet.",
+    });
+  }
+
+  if (metricQuality?.proSubsSource === "unconfigured") {
+    warnings.push({
+      id: "subs-unverified",
+      level: "warning",
+      message: "Pro subscriptions are not billing-verified. Connect Stripe before trusting sub counts.",
+    });
+  } else if (metricQuality?.proSubsSource === "posthog") {
+    warnings.push({
+      id: "subs-posthog",
+      level: "info",
+      message: "Pro subs from PostHog events, not Stripe billing. Directional only.",
+    });
+  }
+
+  if (metricQuality?.funnelInferred) {
+    warnings.push({
+      id: "funnel-inferred",
+      level: "info",
+      message: "Funnel upload/generate steps are estimated. Download CAD is measured.",
     });
   }
 

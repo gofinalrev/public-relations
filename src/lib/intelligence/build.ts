@@ -14,7 +14,7 @@ import { buildPrescription } from "./prescription";
 import { buildPlaybookFromWeek, mergePlaybookEntries } from "./playbook";
 
 /** Bump when intelligence logic changes — invalidates cached weekly JSON. */
-export const INTELLIGENCE_VERSION = 2;
+export const INTELLIGENCE_VERSION = 3;
 
 export function buildWeeklyIntelligence(
   input: IntelligenceInput,

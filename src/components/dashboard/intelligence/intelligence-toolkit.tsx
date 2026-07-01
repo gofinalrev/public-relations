@@ -10,8 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/utils";
-import { BookOpen, Copy, Check, Layers, RefreshCw, Sparkles, Wand2 } from "lucide-react";
-import { canAttributeSocialToTooltrace, contentFocusLabel, resolveContentFocus } from "@/lib/intelligence/content-focus";
+import { BookOpen, Copy, Check, Layers, RefreshCw, Wand2 } from "lucide-react";
 
 type IntelligenceToolkitProps = {
   intel: WeeklyIntelligence;
@@ -162,9 +161,6 @@ function PredictPanel({
   const [draft, setDraft] = useState("");
   const [platform, setPlatform] = useState<PostHighlight["platform"]>("youtube");
 
-  const linkedSocial = canAttributeSocialToTooltrace(resolveContentFocus(posts));
-  const focusLabel = contentFocusLabel(resolveContentFocus(posts));
-
   const draftPrediction =
     draft.trim().length > 3 ? predictDraftPost(draft, platform, hookLibrary, posts) : null;
 
@@ -173,9 +169,9 @@ function PredictPanel({
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Wand2 className="size-5 text-primary" />
-          View estimate
+          Draft view range
         </CardTitle>
-        <CardDescription>Estimate based on historical hook performance</CardDescription>
+        <CardDescription>Rough range from logged posts only — not a forecast</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -196,30 +192,18 @@ function PredictPanel({
           </select>
         </div>
         {draftPrediction && (
-          <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-sm">
+          <div className="rounded-md border border-foreground/[0.08] bg-muted/20 p-3 text-sm">
             <p>
-              <Sparkles className="mr-1 inline size-3.5" />
-              Estimated range: <strong>{formatNumber(draftPrediction.viewsLow)}–{formatNumber(draftPrediction.viewsHigh)}</strong> views ({platformLabel(draftPrediction.platform)})
+              Logged-post range: <strong>{formatNumber(draftPrediction.viewsLow)}–{formatNumber(draftPrediction.viewsHigh)}</strong> views ({platformLabel(draftPrediction.platform)})
             </p>
-            <p className="mt-1 text-muted-foreground">
-              {linkedSocial ? (
-                <>
-                  Tooltrace potential:{" "}
-                  <span className="font-medium capitalize text-foreground">{draftPrediction.tooltracePotential}</span>
-                </>
-              ) : (
-                <>Product focus: <span className="font-medium text-foreground">{focusLabel}</span></>
-              )}
-              {" · "}{(draftPrediction.confidence * 100).toFixed(0)}% confidence
+            <p className="mt-1 text-xs text-muted-foreground">
+              Based on {posts.length} logged post{posts.length === 1 ? "" : "s"}. Not verified against platform analytics.
             </p>
-            {draftPrediction.igUnless && (
-              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{draftPrediction.igUnless}</p>
-            )}
           </div>
         )}
         {predictions.slice(0, 3).map((p) => (
           <div key={`${p.platform}-${p.postTitle}`} className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{p.postTitle}</span>: {formatNumber(p.viewsLow)}–{formatNumber(p.viewsHigh)} views (estimated)
+            <span className="font-medium text-foreground">{p.postTitle}</span>: {formatNumber(p.viewsLow)}–{formatNumber(p.viewsHigh)} views (logged-post range)
           </div>
         ))}
       </CardContent>

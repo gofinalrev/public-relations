@@ -32,7 +32,7 @@ export function ReferrerBreakdown({ report }: ReferrerBreakdownProps) {
           Traffic to Tooltrace
         </CardTitle>
         <CardDescription>
-          Referrers to tooltrace.ai · {formatNumber(total)} visitors
+          Top referrers to tooltrace.ai · {formatNumber(total)} visitors · % of listed sources only
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -43,7 +43,7 @@ export function ReferrerBreakdown({ report }: ReferrerBreakdownProps) {
               <li key={row.domain} className="flex items-center justify-between gap-4 text-sm">
                 <span className="font-medium">{row.platform}</span>
                 <span className="tabular-nums text-muted-foreground">
-                  {formatNumber(row.visitors)} <span className="text-xs">({pct}%)</span>
+                  {formatNumber(row.visitors)} <span className="text-xs">({pct}% listed)</span>
                 </span>
               </li>
             );

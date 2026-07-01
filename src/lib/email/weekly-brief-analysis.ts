@@ -13,7 +13,13 @@ import {
 import type { MetricoolWeeklyMetrics } from "@/lib/metricool/metrics";
 import { resolveChannelGoal } from "@/lib/channel-goals";
 import { formatNumber } from "@/lib/utils";
-import { isStripeSubsUnconfigured, logOps } from "@/lib/ops-log";
+import { isStripeSubsUnconfigured, logOps, filterExecutiveInsights } from "@/lib/ops-log";
+import { buildReportMetricQuality } from "@/lib/metric-trust-server";
+import {
+  resolveProSubsDisplay,
+  shouldShowActivationRate,
+  shouldShowConversionRate,
+} from "@/lib/metric-trust";
 import { PRODUCTION_TEAM_URL } from "@/lib/team-url";
 import { buildIntelligenceInput, buildWeeklyIntelligence } from "@/lib/intelligence/build";
 
@@ -69,6 +75,7 @@ function parseFunnel(report: WeeklyReport | null) {
       finalrevCadUploads?: number;
       funnel?: { upload_image?: number; download_cad?: number; pageviews?: number };
       subscriptionEventUsed?: string;
+      funnelUsedInference?: boolean;
     };
   } catch {
     return null;
@@ -92,8 +99,8 @@ function sectionWhatsWorking(
   posts: ReturnType<typeof parsePostHighlights>,
 ): BriefSection {
   const bullets: string[] = [];
-  const growth = parseStoredInsights(report.growth_insights ?? "");
-  const posthog = parseStoredInsights(report.posthog_insights ?? "");
+  const growth = filterExecutiveInsights(parseStoredInsights(report.growth_insights ?? ""));
+  const posthog = filterExecutiveInsights(parseStoredInsights(report.posthog_insights ?? ""));
   const wins = [...growth, ...posthog].filter((i) => i.type === "success");
 
   for (const w of wins.slice(0, 4)) {
@@ -113,7 +120,11 @@ function sectionWhatsWorking(
   }
 
   const funnel = parseFunnel(report);
-  if (funnel?.analysis?.activationRate != null && funnel.analysis.activationRate >= 50) {
+  if (
+    funnel?.analysis?.activationRate != null &&
+    funnel.analysis.activationRate >= 50 &&
+    !buildReportMetricQuality(report).funnelInferred
+  ) {
     bullets.push(
       `Tooltrace activation: ${funnel.analysis.activationRate.toFixed(0)}% of visitors reach upload/trace.`,
     );
@@ -139,8 +150,8 @@ function sectionWhatsWorking(
 
 function sectionWhatsNotWorking(report: WeeklyReport, posts: ReturnType<typeof parsePostHighlights>): BriefSection {
   const bullets: string[] = [];
-  const growth = parseStoredInsights(report.growth_insights ?? "");
-  const posthog = parseStoredInsights(report.posthog_insights ?? "");
+  const growth = filterExecutiveInsights(parseStoredInsights(report.growth_insights ?? ""));
+  const posthog = filterExecutiveInsights(parseStoredInsights(report.posthog_insights ?? ""));
   const issues = [...growth, ...posthog].filter((i) => i.type === "critical" || i.type === "warning");
 
   for (const issue of issues.slice(0, 5)) {
@@ -298,49 +309,53 @@ function buildMetrics(input: BuildInput): BriefMetric[] {
   if (!report) return [];
 
   const funnel = parseFunnel(report);
-  const prevViews = previousReport?.metricool_video_views ?? null;
-  const prevVisitors = previousReport?.posthog_visitors ?? null;
-  const prevSubs = previousReport?.posthog_subscriptions ?? null;
+  const quality = buildReportMetricQuality(report);
+  const proSubs = resolveProSubsDisplay(report.posthog_subscriptions, quality);
+  const prevViews = context.showWeekOverWeek ? (previousReport?.metricool_video_views ?? null) : null;
+  const prevVisitors = context.showWeekOverWeek ? (previousReport?.posthog_visitors ?? null) : null;
+  const prevSubs = context.showWeekOverWeek && proSubs.showDelta ? (previousReport?.posthog_subscriptions ?? null) : null;
 
   const metrics: BriefMetric[] = [
     {
       layer: "social",
       label: "Video views",
       value: formatNumber(report.metricool_video_views),
-      note: pctDelta(report.metricool_video_views, prevViews),
+      note: pctDelta(report.metricool_video_views, prevViews) ?? "Metricool PDF",
     },
     {
       layer: "social",
-      label: "Social reach",
+      label: "Reach + clicks",
       value: formatNumber(report.metricool_engagement),
-      note: "Impressions + LinkedIn clicks (Metricool)",
+      note: "Metricool · platform interactions",
     },
     {
       layer: "tooltrace",
       label: "Tooltrace visitors",
       value: formatNumber(report.posthog_visitors),
-      note: pctDelta(report.posthog_visitors, prevVisitors),
+      note: pctDelta(report.posthog_visitors, prevVisitors) ?? "PostHog unique visitors",
     },
     {
       layer: "tooltrace",
       label: "Pro subscriptions",
-      value: formatNumber(report.posthog_subscriptions),
-      note: pctDelta(report.posthog_subscriptions, prevSubs),
+      value: proSubs.displayValue,
+      note: proSubs.sublabel + (pctDelta(report.posthog_subscriptions, prevSubs) ? ` · ${pctDelta(report.posthog_subscriptions, prevSubs)}` : ""),
     },
   ];
 
-  if (funnel?.analysis?.conversionRate != null) {
+  if (shouldShowConversionRate(quality) && funnel?.analysis?.conversionRate != null) {
     metrics.push({
       layer: "tooltrace",
       label: "Visitor → Pro conversion",
       value: `${funnel.analysis.conversionRate.toFixed(1)}%`,
+      note: "Stripe-verified subs",
     });
   }
-  if (funnel?.analysis?.activationRate != null) {
+  if (shouldShowActivationRate(quality, funnel) && funnel?.analysis?.activationRate != null) {
     metrics.push({
       layer: "tooltrace",
       label: "Activation (upload/trace)",
       value: `${funnel.analysis.activationRate.toFixed(0)}%`,
+      note: "PostHog measured",
     });
   }
   if (funnel?.finalrevCadUploads != null) {
