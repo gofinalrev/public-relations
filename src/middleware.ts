@@ -1,28 +1,78 @@
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
-import { isAuthConfigured } from "@/lib/auth/allowed-email";
-import { middlewareHandler, type PrHubSession } from "@/lib/auth/middleware-handler";
+import { NextResponse, type NextRequest } from "next/server";
+import { isAuthConfigured, isShopAdmin } from "@/lib/auth";
+import { createSupabaseMiddlewareClient } from "@/lib/supabase";
+import {
+  clientIpFromHeaders,
+  isNetworkOnlyMode,
+  isPrivateOrLocalIp,
+  isVercelDeployment,
+} from "@/lib/network-access";
 
-async function sessionFromRequest(req: NextRequest): Promise<PrHubSession> {
-  const token = await getToken({
-    req,
-    secret: process.env.AUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production",
-  });
-  if (!token?.email) return null;
-  return {
-    user: {
-      email: token.email as string,
-      name: (token.name as string | null) ?? null,
-      image: (token.picture as string | null) ?? null,
-    },
-    shopAdmin: Boolean(token.shopAdmin),
-  };
+function notFound(req: NextRequest) {
+  return NextResponse.rewrite(new URL("/not-found", req.url), { status: 404 });
+}
+
+function isPublic(pathname: string) {
+  return pathname === "/auth/callback" || pathname.startsWith("/api/auth/");
+}
+
+function cronOk(req: NextRequest) {
+  const secret = process.env.CRON_SECRET?.trim();
+  return secret && req.headers.get("authorization") === `Bearer ${secret}`;
+}
+
+function networkDenied(req: NextRequest, authOn: boolean) {
+  if (!isNetworkOnlyMode() || authOn || isPublic(req.nextUrl.pathname)) return null;
+  if (isVercelDeployment()) return notFound(req);
+  const ip = clientIpFromHeaders(req.headers.get("x-forwarded-for"), req.headers.get("x-real-ip"));
+  if (ip === "unknown" || isPrivateOrLocalIp(ip)) return null;
+  return notFound(req);
+}
+
+async function shopAdminSession(req: NextRequest) {
+  const client = createSupabaseMiddlewareClient(req);
+  if (!client) return null;
+  const {
+    data: { user },
+  } = await client.supabase.auth.getUser();
+  return isShopAdmin(user) ? client.response : null;
 }
 
 export default async function middleware(req: NextRequest) {
-  const session = isAuthConfigured() ? await sessionFromRequest(req) : null;
-  return middlewareHandler(req, session);
+  const { nextUrl } = req;
+  const pathname = nextUrl.pathname;
+  const authOn = isAuthConfigured();
+
+  if (pathname.startsWith("/api/cron")) {
+    if (cronOk(req)) return NextResponse.next();
+    const session = await shopAdminSession(req);
+    if (session) return session;
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const denied = networkDenied(req, authOn);
+  if (denied) return denied;
+
+  if (!authOn) {
+    return process.env.NODE_ENV === "development" ? NextResponse.next() : notFound(req);
+  }
+
+  if (isPublic(pathname)) return NextResponse.next();
+
+  const client = createSupabaseMiddlewareClient(req);
+  if (client) {
+    const {
+      data: { user },
+    } = await client.supabase.auth.getUser();
+    if (isShopAdmin(user)) return client.response;
+    if (user) return notFound(req);
+  }
+
+  if (nextUrl.searchParams.get("fr_hub") === "0") return notFound(req);
+
+  const start = new URL("/api/auth/start", nextUrl.origin);
+  start.searchParams.set("return", pathname + nextUrl.search);
+  return NextResponse.redirect(start);
 }
 
 export const config = {

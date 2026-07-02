@@ -2,6 +2,13 @@ import { formatNumber } from "@/lib/utils";
 import type { CompetitivePulse, IntelligenceInput } from "./types";
 import { aestheticSignal, parseReportBreakdown, shopFloorSignal } from "./context";
 
+function formatRatio(a: number, b: number): string {
+  if (b <= 0) return "—";
+  const ratio = a / b;
+  if (ratio >= 10) return `${Math.round(ratio)}×`;
+  return `${ratio.toFixed(1)}×`;
+}
+
 export function buildCompetitivePulse(input: IntelligenceInput): CompetitivePulse {
   const { report, posts } = input;
   const breakdown = parseReportBreakdown(report);
@@ -15,29 +22,56 @@ export function buildCompetitivePulse(input: IntelligenceInput): CompetitivePuls
   const shopViews = shopFloorPosts.reduce((s, p) => s + p.views, 0);
   const aestheticViews = aestheticPosts.reduce((s, p) => s + p.views, 0);
 
-  let yourStrength = "Shop-floor CNC and machinery content.";
-  let gap = "DFM education and quote transparency on LinkedIn.";
-  let recommendation = "Pair one shop-floor Short with a LinkedIn DFM takeaway per week.";
+  const ytViews = yt?.videoViews ?? 0;
+  const igViews = ig?.videoViews ?? 0;
 
-  if (yt && ig && yt.videoViews > (ig.videoViews ?? 0) * 1.3) {
-    yourStrength = `YouTube Shorts: ${formatNumber(yt.videoViews)} views; above typical IG-first benchmarks.`;
-    gap = "Instagram Reels under-indexing vs YouTube for the same clips.";
-    recommendation = "Post on YouTube first, then adapt cover text for Instagram.";
+  let headline = "Channel mix this period";
+  let yourStrength = "Log individual post stats to compare platforms.";
+  let gap = "—";
+  let recommendation = "Add views from YouTube Studio or IG Insights under Post performance.";
+
+  if (ytViews > 0 || igViews > 0) {
+    headline = `YouTube ${formatNumber(ytViews)} views · Instagram ${formatNumber(igViews)} views`;
+
+    if (ytViews > igViews * 1.25) {
+      yourStrength = `YouTube led with ${formatNumber(ytViews)} views (${formatRatio(ytViews, igViews)} Instagram).`;
+      gap =
+        igViews > 0
+          ? `Instagram only ${formatNumber(igViews)} views on similar clips.`
+          : "No Instagram views logged this period.";
+      recommendation = "Publish on YouTube first, then re-cut the cover for Reels.";
+    } else if (igViews > ytViews * 1.25) {
+      yourStrength = `Instagram led with ${formatNumber(igViews)} views (${formatRatio(igViews, ytViews)} YouTube).`;
+      gap = `YouTube had ${formatNumber(ytViews)} views on the same period.`;
+      recommendation = "Study what worked on Reels and mirror the hook on YouTube Shorts.";
+    } else if (ytViews > 0 && igViews > 0) {
+      yourStrength = `YouTube and Instagram were close (${formatNumber(ytViews)} vs ${formatNumber(igViews)} views).`;
+      gap = "Neither platform clearly won — hooks may need to differ by platform.";
+      recommendation = "Try a different opening frame on the next clip for the weaker platform.";
+    } else if (ytViews > 0) {
+      yourStrength = `${formatNumber(ytViews)} YouTube views logged.`;
+      gap = "Instagram had no views this period.";
+      recommendation = "Cross-post the top YouTube clip to Instagram with a native cover.";
+    } else {
+      yourStrength = `${formatNumber(igViews)} Instagram views logged.`;
+      gap = "YouTube had no views this period.";
+      recommendation = "Upload the same clip to YouTube Shorts with a keyword-rich title.";
+    }
   }
 
-  if (shopViews > aestheticViews * 2 && shopViews > 0) {
-    yourStrength = "Shop-floor hooks averaged higher views than aesthetic edits this period.";
-  } else if (aestheticViews > shopViews * 2 && aestheticViews > 0) {
-    gap = "Aesthetic edits lead views; shop-floor hooks may reach CNC audience better.";
-    recommendation = "Test shop-floor opening frame on the next finalREV Short.";
+  if (shopViews > aestheticViews * 1.5 && shopViews > 0) {
+    yourStrength = `Shop-floor posts: ${formatNumber(shopViews)} views vs ${formatNumber(aestheticViews)} on aesthetic edits.`;
+  } else if (aestheticViews > shopViews * 1.5 && aestheticViews > 0) {
+    gap = `Aesthetic edits (${formatNumber(aestheticViews)} views) beat shop-floor (${formatNumber(shopViews)}).`;
+    recommendation = "Try leading with CNC/spindle footage on the next clip.";
   }
 
-  if (li && li.impressions > 200) {
-    yourStrength += ` LinkedIn: ${formatNumber(li.impressions)} impressions this period.`;
+  if (li && li.impressions > 0) {
+    yourStrength = `${yourStrength.replace(/\.$/, "")}. LinkedIn: ${formatNumber(li.impressions)} impressions.`;
   }
 
   return {
-    headline: "Your channel mix this period (no external benchmark data)",
+    headline,
     yourStrength,
     gap,
     recommendation,

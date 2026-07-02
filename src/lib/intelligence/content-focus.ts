@@ -39,7 +39,7 @@ export function contentFocusLabel(focus: ContentFocus): string {
 
 export function parallelTracksNote(focus: ContentFocus): string {
   if (canAttributeSocialToTooltrace(focus)) {
-    return "Social and Tooltrace metrics are linked where posts target Tooltrace.";
+    return "Some logged posts target Tooltrace — site traffic can be compared to those clips.";
   }
-  return "finalREV social and Tooltrace site are separate tracks. Current clips are finalREV shop-floor; Tooltrace Shorts are not live yet, so social views are not attributed to Tooltrace traffic.";
+  return "Logged posts are finalREV shop-floor clips. tooltrace.ai visitors are tracked separately and aren't tied to these views.";
 }

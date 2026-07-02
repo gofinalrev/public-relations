@@ -30,14 +30,6 @@ export function parseReportBreakdown(report: WeeklyReport | null): MetricoolWeek
   }
 }
 
-export function quoteValue(): number {
-  return Number(process.env.CONTENT_PNL_QUOTE_VALUE ?? 2500);
-}
-
-export function proAnnualValue(): number {
-  return Number(process.env.CONTENT_PNL_PRO_ANNUAL_VALUE ?? 348);
-}
-
 export function extractHook(title: string): string {
   const cleaned = title.replace(/^["']|["']$/g, "").trim();
   const words = cleaned.split(/\s+/).slice(0, 6);

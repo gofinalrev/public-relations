@@ -164,14 +164,30 @@ function PredictPanel({
   const draftPrediction =
     draft.trim().length > 3 ? predictDraftPost(draft, platform, hookLibrary, posts) : null;
 
+  if (posts.length < 2) {
+    return (
+      <Card className="border-dashed">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wand2 className="size-5" />
+            View range
+          </CardTitle>
+          <CardDescription>Log at least 2 posts on a platform to compare view ranges.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Wand2 className="size-5 text-primary" />
-          Draft view range
+          View range from logged posts
         </CardTitle>
-        <CardDescription>Rough range from logged posts only — not a forecast</CardDescription>
+        <CardDescription>
+          Median ±50% on the same platform — not a forecast, not from platform analytics
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -191,19 +207,25 @@ function PredictPanel({
             ))}
           </select>
         </div>
+        {draft.trim().length > 3 && !draftPrediction && (
+          <p className="text-sm text-muted-foreground">
+            Need at least 2 logged {platformLabel(platform)} posts to show a range.
+          </p>
+        )}
         {draftPrediction && (
           <div className="rounded-md border border-foreground/[0.08] bg-muted/20 p-3 text-sm">
             <p>
-              Logged-post range: <strong>{formatNumber(draftPrediction.viewsLow)}–{formatNumber(draftPrediction.viewsHigh)}</strong> views ({platformLabel(draftPrediction.platform)})
+              Range: <strong>{formatNumber(draftPrediction.viewsLow)}–{formatNumber(draftPrediction.viewsHigh)}</strong> views
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Based on {posts.length} logged post{posts.length === 1 ? "" : "s"}. Not verified against platform analytics.
+              Based on {draftPrediction.basedOnPosts} logged {platformLabel(draftPrediction.platform)} posts (median ±50%).
             </p>
           </div>
         )}
         {predictions.slice(0, 3).map((p) => (
           <div key={`${p.platform}-${p.postTitle}`} className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{p.postTitle}</span>: {formatNumber(p.viewsLow)}–{formatNumber(p.viewsHigh)} views (logged-post range)
+            <span className="font-medium text-foreground">{p.postTitle}</span>: {formatNumber(p.viewsLow)}–{formatNumber(p.viewsHigh)} views
+            <span className="text-xs"> ({p.basedOnPosts} {platformLabel(p.platform)} posts)</span>
           </div>
         ))}
       </CardContent>

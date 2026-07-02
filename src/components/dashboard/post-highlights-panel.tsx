@@ -262,7 +262,7 @@ function PostHighlightRow({
         )}
         {!compact && autopsy && (
           <div className="mt-2 border-l-2 border-amber-500/50 pl-2 text-[11px]">
-            <p className="font-medium text-amber-700 dark:text-amber-400">Possible reasons</p>
+            <p className="font-medium text-amber-700 dark:text-amber-400">From logged data</p>
             <ul className="mt-0.5 list-disc pl-4 text-muted-foreground">
               {autopsy.reasons.slice(0, 2).map((r) => (
                 <li key={r}>{r}</li>

@@ -52,8 +52,7 @@ export function buildHookLibrary(history: WeeklyReport[], currentPosts: PostHigh
         format: entry.format,
         avgViews: Math.round(avgViews),
         appearances: entry.views.length,
-        visitRateEstimate: null,
-        status: (entry.weeks.size >= 2 && avgViews >= 800 ? "validated" : "hypothesis") as HookEntry["status"],
+        status: (entry.views.length >= 3 && entry.weeks.size >= 2 ? "validated" : "hypothesis") as HookEntry["status"],
       };
     })
     .sort((a, b) => b.avgViews - a.avgViews)

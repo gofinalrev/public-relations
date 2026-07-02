@@ -28,13 +28,10 @@ const OPS_PATTERNS: RegExp[] = [
   /Reddit API/i,
   /Metricool API/i,
   /\bnpm run\b/i,
-  /\bffmpeg\b/i,
-  /ffmpeg-static/i,
   /team:serve/i,
   /GOOGLE_GENERATIVE_AI/i,
   /Gemini not configured/i,
   /Transcription is not available/i,
-  /Shorts editor is not available/i,
 ];
 
 export function isOpsMessage(text: string): boolean {

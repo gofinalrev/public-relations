@@ -1,62 +1,46 @@
 import type { PostHighlight, PostHighlightPlatform } from "@/lib/post-highlights";
 import type { HookEntry, PublishPrediction } from "./types";
-import { aestheticSignal, shopFloorSignal } from "./context";
-import { canAttributeSocialToTooltrace, resolveContentFocus } from "./content-focus";
+
+function medianViews(posts: { views: number }[]): number | null {
+  if (posts.length === 0) return null;
+  const sorted = [...posts].map((p) => p.views).sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)] ?? null;
+}
 
 export function buildPublishPredictions(
   posts: PostHighlight[],
   hookLibrary: HookEntry[],
 ): PublishPrediction[] {
-  const platformMedians = new Map<PostHighlightPlatform, number>();
+  if (posts.length < 2) return [];
+
+  const predictions: PublishPrediction[] = [];
 
   for (const post of posts) {
-    const list = platformMedians.get(post.platform) ?? 0;
-    platformMedians.set(post.platform, Math.max(list, post.views));
-  }
+    const platformPosts = posts.filter((p) => p.platform === post.platform);
+    const med = medianViews(platformPosts);
+    if (med === null || platformPosts.length < 2) continue;
 
-  const defaults: Partial<Record<PostHighlightPlatform, number>> = {
-    youtube: 1500,
-    instagram: 400,
-    tiktok: 600,
-    x: 300,
-    linkedin: 200,
-  };
-
-  const linked = canAttributeSocialToTooltrace(resolveContentFocus(posts));
-
-  return posts.map((post) => {
-    const median = platformMedians.get(post.platform) || defaults[post.platform] || 500;
     const hook = hookLibrary.find(
-      (h) => h.platform === post.platform && post.title.toLowerCase().includes(h.hook.toLowerCase().slice(0, 12)),
+      (h) =>
+        h.platform === post.platform &&
+        h.appearances >= 2 &&
+        post.title.toLowerCase().includes(h.hook.toLowerCase().slice(0, 12)),
     );
 
-    const shop = shopFloorSignal(post.title);
-    const aesthetic = aestheticSignal(post.title);
-    let tooltracePotential: PublishPrediction["tooltracePotential"] = linked ? "medium" : "low";
-    if (linked && shop) tooltracePotential = "high";
-    if (linked && aesthetic && !shop) tooltracePotential = "low";
-    if (post.product === "tooltrace" || post.product === "both") tooltracePotential = "high";
-    if (post.product === "finalrev") tooltracePotential = "low";
+    const boost = hook?.status === "validated" ? 1.15 : 1;
+    const viewsLow = Math.round(med * 0.5 * boost);
+    const viewsHigh = Math.round(med * 1.5 * boost);
 
-    const boost = hook?.status === "validated" ? 1.3 : 1;
-    const viewsLow = Math.round(median * 0.4 * boost);
-    const viewsHigh = Math.round(median * 1.8 * boost);
-
-    let igUnless: string | null = null;
-    if (post.platform === "instagram" || post.platform === "youtube") {
-      igUnless = "IG estimate assumes native cover text in first 2 seconds.";
-    }
-
-    return {
+    predictions.push({
       postTitle: post.title,
       platform: post.platform,
       viewsLow,
       viewsHigh,
-      tooltracePotential,
-      igUnless: post.platform === "youtube" ? igUnless : null,
-      confidence: hook ? 0.72 : posts.length >= 3 ? 0.55 : 0.35,
-    };
-  });
+      basedOnPosts: platformPosts.length,
+    });
+  }
+
+  return predictions;
 }
 
 export function predictDraftPost(
@@ -64,9 +48,24 @@ export function predictDraftPost(
   platform: PostHighlightPlatform,
   hookLibrary: HookEntry[],
   historyPosts: PostHighlight[],
-): PublishPrediction {
-  return buildPublishPredictions(
-    [...historyPosts, { id: "draft", platform, title, views: 0, likes: 0 }],
-    hookLibrary,
-  ).slice(-1)[0]!;
+): PublishPrediction | null {
+  const platformPosts = historyPosts.filter((p) => p.platform === platform);
+  const med = medianViews(platformPosts);
+  if (med === null || platformPosts.length < 2) return null;
+
+  const hook = hookLibrary.find(
+    (h) =>
+      h.platform === platform &&
+      h.appearances >= 2 &&
+      title.toLowerCase().includes(h.hook.toLowerCase().slice(0, 12)),
+  );
+  const boost = hook?.status === "validated" ? 1.15 : 1;
+
+  return {
+    postTitle: title,
+    platform,
+    viewsLow: Math.round(med * 0.5 * boost),
+    viewsHigh: Math.round(med * 1.5 * boost),
+    basedOnPosts: platformPosts.length,
+  };
 }

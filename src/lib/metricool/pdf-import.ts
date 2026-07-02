@@ -6,6 +6,7 @@ import {
   getWeeklyReport,
   getAllChannels,
   saveMetricoolPdf,
+  updatePostHighlights,
 } from "@/lib/db";
 import { isPostHogConfigured } from "@/lib/posthog/config";
 import { fetchWeeklyPostHogMetrics, fetchPostHogMetricsForPeriod } from "@/lib/posthog/metrics";
@@ -18,12 +19,54 @@ import { syncFreeChannelStats } from "@/lib/social/sync";
 import { buildDashboardPeriodContext } from "@/lib/period-context";
 import { postWeeklyDigest } from "@/lib/slack/weekly-digest";
 import { canAttributeSocialToTooltrace, resolveContentFocus } from "@/lib/intelligence/content-focus";
-import { parsePostHighlights } from "@/lib/post-highlights";
+import { parsePostHighlights, serializePostHighlights, type PostHighlight } from "@/lib/post-highlights";
+import type { ParsedPdfPost } from "@/lib/metricool/pdf-post-parser";
 import fs from "fs";
 import path from "path";
 import type { WeeklyReport } from "@/lib/db";
 
 const REPORTS_DIR = path.join(process.cwd(), "data", "reports");
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+}
+
+function mergePdfPostsIntoHighlights(
+  existingJson: string | null | undefined,
+  pdfPosts: ParsedPdfPost[],
+): string {
+  const existing = parsePostHighlights(existingJson);
+  const manual = existing.filter((p) => !p.id.startsWith("metricool-"));
+  const byKey = new Map<string, PostHighlight>();
+
+  for (const post of manual) {
+    byKey.set(`${post.platform}:${post.publishedAt ?? ""}:${post.title.slice(0, 48).toLowerCase()}`, post);
+  }
+
+  for (const post of pdfPosts) {
+    const highlight: PostHighlight = {
+      id: `metricool-x-${post.publishedAt ?? "unknown"}-${slugify(post.title)}`,
+      platform: post.platform,
+      title: post.title,
+      views: post.views,
+      likes: post.likes,
+      publishedAt: post.publishedAt,
+      product: "finalrev",
+      format: post.format,
+      notes: "Imported from Metricool PDF",
+    };
+    const key = `${highlight.platform}:${highlight.publishedAt ?? ""}:${highlight.title.slice(0, 48).toLowerCase()}`;
+    if (!byKey.has(key)) {
+      byKey.set(key, highlight);
+    }
+  }
+
+  return serializePostHighlights([...byKey.values()].sort((a, b) => b.views - a.views));
+}
 
 function localReportsBackup(weekStart: string, filename: string, buffer: Buffer) {
   if (process.env.VERCEL) return;
@@ -140,6 +183,15 @@ export async function importMetricoolPdfBuffer(
       learning: combinedLearning || undefined,
       actionItemsJson,
     });
+
+    if (parsed.parsedPosts.length > 0) {
+      const mergedPosts = mergePdfPostsIntoHighlights(
+        existingForPosts?.post_highlights_json,
+        parsed.parsedPosts,
+      );
+      await updatePostHighlights(weekStart, mergedPosts);
+      report = (await getWeeklyReport(weekStart)) ?? report;
+    }
 
     await syncFreeChannelStats();
 

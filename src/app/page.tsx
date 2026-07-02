@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getDashboardData, getAppSetting, getMetricoolPdfMeta, listMetricoolPdfMetas, setAppSetting } from "@/lib/db";
+import { getDashboardData, getAppSetting, getMetricoolPdfMeta, listMetricoolPdfMetas } from "@/lib/db";
 import { getCurrentWeekKey } from "@/lib/weeks";
 import { buildDashboardPeriodContext } from "@/lib/period-context";
 import { analyzeHistory } from "@/lib/history-analytics";
@@ -30,7 +30,7 @@ import { TeamShareLink } from "@/components/dashboard/team-share-link";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SectionHeader } from "@/components/dashboard/section-header";
-import { isAuthConfigured } from "@/lib/auth/allowed-email";
+import { isAuthConfigured } from "@/lib/auth";
 import { isPostHogConfigured } from "@/lib/posthog/config";
 import { getIntegrationStatus, getIntegrationWarnings, getIntegrationOpsNotes } from "@/lib/integrations";
 import { OpsLogSink } from "@/components/dashboard/ops-log-sink";
@@ -39,14 +39,12 @@ import { buildReportMetricQuality } from "@/lib/metric-trust-server";
 import { resolveProSubsDisplay } from "@/lib/metric-trust";
 import { DataTrustBanner } from "@/components/dashboard/data-trust-banner";
 import { isGeminiConfigured } from "@/lib/gemini/config";
-import { buildCaptionWeekContext } from "@/lib/gemini/caption-prompt";
 import { isMetricoolConfigured } from "@/lib/metricool/config";
 import { syncPostHogForWeek } from "@/app/posthog-actions";
 import { syncMetricoolForWeek } from "@/app/metricool-actions";
 import { syncSocialChannels } from "@/app/social-sync-actions";
 import { loadOrBuildIntelligence } from "@/lib/intelligence/persist";
-import { postWarRoomAlert } from "@/lib/slack/weekly-digest";
-import { resolveTeamShareUrl, getSuggestedPinUrl, PRODUCTION_TEAM_URL } from "@/lib/team-url";
+import { resolveTeamShareUrl, getSuggestedPinUrl } from "@/lib/team-url";
 import type { ActionItem } from "@/lib/action-items";
 import { WeeklyChecklist } from "@/components/dashboard/weekly-checklist";
 import { parsePostHighlights } from "@/lib/post-highlights";
@@ -144,17 +142,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     channels,
     context: periodContext,
   });
-
-  if (intelligence.warRoom?.active && report) {
-    const warKey = `war_room_sent_${weekStart}`;
-    const already = await getAppSetting(warKey);
-    if (!already) {
-      const hub = process.env.APP_PUBLIC_URL?.trim() || PRODUCTION_TEAM_URL;
-      if (await postWarRoomAlert({ ...report, intelligence_json: JSON.stringify(intelligence) }, hub)) {
-        await setAppSetting(warKey, new Date().toISOString());
-      }
-    }
-  }
 
   const authEnabled = isAuthConfigured();
   const postsLogged = parsePostHighlights(report?.post_highlights_json).length;
@@ -340,7 +327,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               context={periodContext}
               geminiConfigured={isGeminiConfigured()}
               intelligence={intelligence}
-              weekContextSummary={buildCaptionWeekContext(report, channels, periodContext).summary}
             />
           </>
         ) : (

@@ -2,6 +2,13 @@ import { parse, differenceInCalendarDays, parseISO, isMonday, format } from "dat
 import { getWeekStart } from "@/lib/weeks";
 import { SOCIAL_PLATFORMS, SOCIAL_PLATFORM_SLUGS, type SocialPlatformSlug } from "@/lib/platforms";
 import type { MetricoolWeeklyMetrics, PlatformWeeklyStats } from "./metrics";
+import {
+  aggregateXFromPosts,
+  isXCommunityGrowthPage,
+  parseAllPdfPosts,
+  parseXCommunityGrowth,
+  type ParsedPdfPost,
+} from "./pdf-post-parser";
 
 export type ParsedMetricoolPdf = {
   brand: string;
@@ -22,6 +29,7 @@ export type ParsedMetricoolPdf = {
     linkedinShares: number;
   };
   periodDays: number;
+  parsedPosts: ParsedPdfPost[];
 };
 
 function parseNum(raw: string): number {
@@ -135,6 +143,11 @@ function buildPlatformStat(
     linkedinComments: number;
     linkedinShares: number;
     linkedinFollowers: number;
+    xFollowers: number;
+    xImpressions: number;
+    xEngagement: number;
+    xVideoViews: number;
+    xPosts: number;
   },
 ): PlatformWeeklyStats {
   const meta = SOCIAL_PLATFORMS[slug];
@@ -143,15 +156,24 @@ function buildPlatformStat(
       ? extras.youtubeSubscribers || followers.youtube || 0
       : slug === "linkedin"
         ? followers.linkedin || extras.linkedinFollowers || 0
-        : followers[slug] ?? 0;
+        : slug === "x"
+          ? extras.xFollowers || followers.x || 0
+          : followers[slug] ?? 0;
   const impressionCount =
     slug === "linkedin"
       ? extras.linkedinImpressions || impressions.linkedin || 0
       : slug === "youtube"
         ? impressions.youtube ?? 0
-        : impressions[slug] ?? 0;
+        : slug === "x"
+          ? extras.xImpressions || impressions.x || 0
+          : impressions[slug] ?? 0;
 
-  const videoViews = slug === "youtube" ? extras.youtubeVideoViews : 0;
+  const videoViews =
+    slug === "youtube"
+      ? extras.youtubeVideoViews
+      : slug === "x"
+        ? extras.xVideoViews
+        : 0;
 
   const linkedinInteractions =
     extras.linkedinReactions + extras.linkedinComments + extras.linkedinShares + extras.linkedinClicks;
@@ -159,7 +181,9 @@ function buildPlatformStat(
   const engagement =
     slug === "linkedin"
       ? linkedinInteractions
-      : 0;
+      : slug === "x"
+        ? extras.xEngagement
+        : 0;
 
   return {
     platform: slug,
@@ -170,7 +194,7 @@ function buildPlatformStat(
     videoViews,
     engagement,
     impressions: impressionCount,
-    posts: 0,
+    posts: slug === "x" ? extras.xPosts : 0,
   };
 }
 
@@ -195,6 +219,8 @@ export function parseMetricoolPdfText(text: string, sourceFilename: string): Par
   let youtubeSubsGained = 0;
   let youtubeSubscribers = 0;
   let pageViews = 0;
+  let xFollowers = 0;
+  let xPostsCount = 0;
 
   for (const page of pages) {
     const title = pageTitle(page);
@@ -220,8 +246,16 @@ export function parseMetricoolPdfText(text: string, sourceFilename: string): Par
       youtubeSubsGained = parseLabeledValue(page, "Gained");
     } else if (title.includes("video views") && page.includes("Video views")) {
       youtubeVideoViews = parseLabeledValue(page, "Video views");
+    } else if (isXCommunityGrowthPage(page)) {
+      const xGrowth = parseXCommunityGrowth(page);
+      if (xGrowth.followers > 0) xFollowers = xGrowth.followers;
+      if (xGrowth.posts > 0) xPostsCount = xGrowth.posts;
     }
   }
+
+  const parsedPosts = parseAllPdfPosts(pages);
+  const xAgg = aggregateXFromPosts(parsedPosts);
+  if (xFollowers > 0) followerPlatforms.x = xFollowers;
 
   if (!totalFollowers) {
     totalFollowers =
@@ -243,6 +277,11 @@ export function parseMetricoolPdfText(text: string, sourceFilename: string): Par
     linkedinComments,
     linkedinShares,
     linkedinFollowers,
+    xFollowers,
+    xImpressions: xAgg.impressions,
+    xEngagement: xAgg.engagement,
+    xVideoViews: xAgg.videoViews,
+    xPosts: xPostsCount || parsedPosts.filter((p) => p.platform === "x").length,
   };
 
   const platformStats = SOCIAL_PLATFORM_SLUGS.map((slug) =>
@@ -250,7 +289,12 @@ export function parseMetricoolPdfText(text: string, sourceFilename: string): Par
   );
 
   const totalVideoViews = platformStats.reduce((s, p) => s + p.videoViews, 0);
-  const totalEngagement = totalImpressions + linkedinClicks;
+  const totalEngagement = platformStats.reduce((s, p) => {
+    if (p.platform === "linkedin") return s + p.engagement;
+    if (p.platform === "youtube") return s + p.videoViews;
+    if (p.platform === "x") return s + (p.impressions > 0 ? p.impressions : p.videoViews);
+    return s + p.impressions;
+  }, 0);
 
   const metrics: MetricoolWeeklyMetrics = {
     weekStart,
@@ -283,6 +327,7 @@ export function parseMetricoolPdfText(text: string, sourceFilename: string): Par
       linkedinShares,
     },
     periodDays,
+    parsedPosts,
   };
 }
 

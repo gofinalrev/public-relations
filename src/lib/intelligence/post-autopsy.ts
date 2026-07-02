@@ -4,9 +4,19 @@ import { aestheticSignal, shopFloorSignal } from "./context";
 
 export function buildPostAutopsies(input: IntelligenceInput): PostAutopsy[] {
   const { posts } = input;
-  if (posts.length < 2) return [];
+  if (posts.length < 3) return [];
 
-  const medianViews = [...posts].sort((a, b) => a.views - b.views)[Math.floor(posts.length / 2)]?.views ?? 0;
+  const sorted = [...posts].sort((a, b) => a.views - b.views);
+  const medianViews = sorted[Math.floor(sorted.length / 2)]?.views ?? 0;
+  const shopPosts = posts.filter((p) => shopFloorSignal(p.title));
+  const aestheticPosts = posts.filter((p) => aestheticSignal(p.title));
+  const shopAvg =
+    shopPosts.length > 0 ? shopPosts.reduce((s, p) => s + p.views, 0) / shopPosts.length : null;
+  const aestheticAvg =
+    aestheticPosts.length > 0
+      ? aestheticPosts.reduce((s, p) => s + p.views, 0) / aestheticPosts.length
+      : null;
+
   const autopsies: PostAutopsy[] = [];
 
   for (const post of posts) {
@@ -15,36 +25,38 @@ export function buildPostAutopsies(input: IntelligenceInput): PostAutopsy[] {
     const reasons: string[] = [];
     const fixes: string[] = [];
 
-    if (post.views < 100) {
-      reasons.push(`Only ${formatNumber(post.views)} views (bottom quartile this period)`);
-    } else {
-      reasons.push(`${formatNumber(post.views)} views vs median ${formatNumber(medianViews)}`);
+    reasons.push(
+      `${formatNumber(post.views)} views — below the ${formatNumber(medianViews)} median for ${posts.length} logged posts this period`,
+    );
+
+    if (!post.url) reasons.push("No post URL logged");
+
+    if (post.platform === "instagram" && post.format && post.format !== "reel") {
+      reasons.push(`Logged as ${post.format}, not reel`);
+      fixes.push("If this was a Reel, update the format tag");
     }
 
-    if (post.publishedAt) {
-      const day = new Date(post.publishedAt).getDay();
-      if (day === 0 || day === 6) reasons.push("Posted on weekend (typically lower distribution)");
-    }
-
-    if (!post.url) reasons.push("No direct link logged");
-
-    if (post.platform === "instagram" && post.format !== "reel") {
-      reasons.push("IG post format. Reels typically get higher reach.");
-      fixes.push("Re-upload as Reel with text hook on first frame");
-    }
-
-    if (aestheticSignal(post.title) && !shopFloorSignal(post.title)) {
-      reasons.push("Aesthetic-style title; shop-floor posts converted better historically.");
-      fixes.push("Show machine or product screen in first 3 seconds.");
+    if (
+      aestheticSignal(post.title) &&
+      !shopFloorSignal(post.title) &&
+      shopAvg !== null &&
+      aestheticAvg !== null &&
+      shopPosts.length >= 2 &&
+      aestheticPosts.length >= 1 &&
+      shopAvg > aestheticAvg * 1.3
+    ) {
+      reasons.push(
+        `Shop-floor posts averaged ${formatNumber(Math.round(shopAvg))} views this period vs ${formatNumber(Math.round(aestheticAvg))} on aesthetic edits`,
+      );
+      fixes.push("Try shop-floor or CNC footage in the opening frame");
     }
 
     if (!post.experiment) {
-      reasons.push("No pinned comment / CTA experiment tagged");
-      fixes.push("Tag experiment: pinned tooltrace.ai/designer link and re-post");
+      reasons.push("No experiment tag (e.g. pinned link test)");
     }
 
     if (fixes.length === 0) {
-      fixes.push("Test a stronger first-frame text hook and cross-post to YouTube Shorts first");
+      fixes.push("Compare hooks with your top post this period and cross-post to the stronger platform first");
     }
 
     autopsies.push({

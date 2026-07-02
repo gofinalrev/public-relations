@@ -1,9 +1,6 @@
 import { parsePostHighlights } from "@/lib/post-highlights";
 import type { WeeklyIntelligence, IntelligenceInput, PlaybookEntry } from "./types";
 import { buildContentPnl, buildFunnelStory } from "./content-pnl";
-import { buildBoardNarrative } from "./board-narrative";
-import { buildClipAttribution } from "./clip-attribution";
-import { buildWarRoom } from "./war-room";
 import { buildCompetitivePulse } from "./competitive-pulse";
 import { buildMondayQueue } from "./monday-queue";
 import { buildHookLibrary } from "./hook-library";
@@ -14,7 +11,7 @@ import { buildPrescription } from "./prescription";
 import { buildPlaybookFromWeek, mergePlaybookEntries } from "./playbook";
 
 /** Bump when intelligence logic changes — invalidates cached weekly JSON. */
-export const INTELLIGENCE_VERSION = 3;
+export const INTELLIGENCE_VERSION = 6;
 
 export function buildWeeklyIntelligence(
   input: IntelligenceInput,
@@ -29,13 +26,10 @@ export function buildWeeklyIntelligence(
     version: INTELLIGENCE_VERSION,
     contentPnl: buildContentPnl(input),
     funnelStory: buildFunnelStory(input),
-    boardNarrative: buildBoardNarrative(input),
     prescription: buildPrescription(input),
-    warRoom: buildWarRoom(input),
     competitivePulse: buildCompetitivePulse(input),
     mondayQueue: buildMondayQueue(input),
     hookLibrary,
-    clipAttribution: buildClipAttribution(input),
     repurposePlans: buildRepurposePlans(input),
     autopsies: buildPostAutopsies(input),
     publishPredictions: buildPublishPredictions(posts, hookLibrary),
@@ -68,7 +62,7 @@ export function parseIntelligenceJson(raw: string | null | undefined): WeeklyInt
   try {
     const parsed = JSON.parse(raw) as WeeklyIntelligence;
     if ((parsed.version ?? 0) < INTELLIGENCE_VERSION) return null;
-    if (parsed.funnelStory && !parsed.funnelStory.mode) {
+    if (parsed.funnelStory) {
       parsed.funnelStory.mode = "parallel";
     }
     return parsed;

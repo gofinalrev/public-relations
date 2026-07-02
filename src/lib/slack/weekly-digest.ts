@@ -4,7 +4,6 @@ import { parseStoredInsights } from "@/lib/action-items";
 import { formatNumber } from "@/lib/utils";
 import { PRODUCTION_TEAM_URL } from "@/lib/team-url";
 import { parseIntelligenceJson } from "@/lib/intelligence/build";
-import { formatWarRoomSlack } from "@/lib/intelligence/war-room";
 
 type DigestInput = {
   weekStart: string;
@@ -54,23 +53,6 @@ export function buildWeeklyDigestText({ report, context, source }: DigestInput):
   ].filter(Boolean);
 
   return lines.join("\n");
-}
-
-export async function postWarRoomAlert(report: WeeklyReport, hubUrl: string): Promise<boolean> {
-  const intel = parseIntelligenceJson(report.intelligence_json);
-  if (!intel?.warRoom?.active) return false;
-  const webhook = process.env.SLACK_WEBHOOK_URL?.trim();
-  if (!webhook) return false;
-  try {
-    const response = await fetch(webhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: formatWarRoomSlack(intel.warRoom, hubUrl) }),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
 }
 
 export async function postWeeklyDigest(input: DigestInput): Promise<boolean> {

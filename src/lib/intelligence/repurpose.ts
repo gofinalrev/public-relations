@@ -1,5 +1,6 @@
 import type { PostHighlightPlatform } from "@/lib/post-highlights";
 import { platformLabel } from "@/lib/post-highlights";
+import { formatNumber } from "@/lib/utils";
 import type { IntelligenceInput, RepurposePlan } from "./types";
 
 const REPURPOSE_ORDER: PostHighlightPlatform[] = ["youtube", "instagram", "tiktok", "x", "linkedin"];
@@ -30,12 +31,12 @@ export function buildRepurposePlans(input: IntelligenceInput): RepurposePlan[] {
       platform,
       captionAngle:
         platform === "linkedin"
-          ? `Engineer takeaway from "${source.title}": DFM or quote angle for finalREV`
+          ? `Pull a DFM or quote takeaway from "${source.title}" for LinkedIn`
           : platform === "x"
-            ? `Short-form post using hook from "${source.title}"`
-            : `Same clip, native ${platformLabel(platform)} cover text`,
+            ? `Thread hook from "${source.title}" — keep it under 280 chars`
+            : `Same clip on ${platformLabel(platform)} — rewrite the cover text for that feed`,
       coverNote:
-        platform === "instagram" ? "Add text overlay in first frame before process reveal." : undefined,
+        platform === "instagram" ? "Text on frame 1 before the process reveal." : undefined,
       postOrder: i + 2,
     }));
 
@@ -48,8 +49,8 @@ export function buildRepurposePlans(input: IntelligenceInput): RepurposePlan[] {
         targets: [
           {
             platform: laggard.platform,
-            captionAngle: `Re-cut for ${platformLabel(laggard.platform)}: source got ${source.views} views vs ${laggard.views}`,
-            coverNote: "Native aspect + stronger first 2s",
+            captionAngle: `${platformLabel(laggard.platform)} got ${formatNumber(laggard.views)} views vs ${formatNumber(source.views)} on ${platformLabel(source.platform)} — try a native re-cut`,
+            coverNote: "Different aspect ratio and stronger first 2 seconds",
             postOrder: 2,
           },
         ],

@@ -5,14 +5,14 @@ export function buildPlaybookFromWeek(input: IntelligenceInput, hooks: HookEntry
   const { report, posts, weekStart } = input;
   const entries: PlaybookEntry[] = [];
 
-  for (const hook of hooks.filter((h) => h.status === "validated").slice(0, 4)) {
+  for (const hook of hooks.filter((h) => h.appearances >= 2).slice(0, 4)) {
     entries.push({
       id: `pb-hook-${hook.id}`,
       type: "hook",
       title: `"${hook.hook}" on ${hook.platform}`,
-      body: `Averaged ${hook.avgViews.toLocaleString()} views across ${hook.appearances} posts.`,
+      body: `${hook.avgViews.toLocaleString()} avg views across ${hook.appearances} logged posts.`,
       platform: hook.platform,
-      status: "validated",
+      status: hook.appearances >= 3 ? "validated" : "hypothesis",
       evidenceWeeks: [weekStart],
       liftPct: undefined,
     });
@@ -26,10 +26,10 @@ export function buildPlaybookFromWeek(input: IntelligenceInput, hooks: HookEntry
     if (shopAvg > aesAvg * 1.3) {
       entries.push({
         id: `pb-validated-shop-${weekStart}`,
-        type: "validated",
-        title: "Shop-floor hooks outperform aesthetic edits",
-        body: `Shop-floor content averaged ${Math.round(shopAvg).toLocaleString()} views vs ${Math.round(aesAvg).toLocaleString()} for aesthetic edits.`,
-        status: "validated",
+        type: "hypothesis",
+        title: "Shop-floor posts beat aesthetic edits (this period)",
+        body: `${Math.round(shopAvg).toLocaleString()} avg views vs ${Math.round(aesAvg).toLocaleString()} — one period only, not proven yet.`,
+        status: "hypothesis",
         evidenceWeeks: [weekStart],
         liftPct: Math.round(((shopAvg - aesAvg) / aesAvg) * 100),
       });
@@ -42,7 +42,7 @@ export function buildPlaybookFromWeek(input: IntelligenceInput, hooks: HookEntry
       id: `pb-exp-${post.id}`,
       type: "experiment",
       title: post.experiment!,
-      body: `"${post.title}" on ${post.platform} — ${post.views.toLocaleString()} views. Compare next period.`,
+      body: `"${post.title}" on ${post.platform} — ${post.views.toLocaleString()} views logged. Compare next period.`,
       platform: post.platform,
       status: "hypothesis",
       evidenceWeeks: [weekStart],
@@ -53,7 +53,7 @@ export function buildPlaybookFromWeek(input: IntelligenceInput, hooks: HookEntry
     entries.push({
       id: `pb-lock-${weekStart}`,
       type: "validated",
-      title: "Team lock-in",
+      title: "Team note",
       body: report.locked_findings.trim(),
       status: "validated",
       evidenceWeeks: [weekStart],
@@ -73,7 +73,8 @@ export function mergePlaybookEntries(stored: PlaybookEntry[], fresh: PlaybookEnt
       byId.set(e.id, {
         ...existing,
         evidenceWeeks: [...weeks],
-        status: weeks.size >= 2 && existing.type !== "experiment" ? "validated" : existing.status,
+        status:
+          weeks.size >= 3 && existing.type !== "experiment" ? "validated" : existing.status,
       });
     } else {
       byId.set(e.id, e);

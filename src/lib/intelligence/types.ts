@@ -5,13 +5,8 @@ export type ContentPnl = {
   tooltraceVisitors: number;
   proSubs: number;
   stepUploads: number;
-  visitRate: number | null;
-  conversionRate: number | null;
-  quotePipelineLow: number;
-  quotePipelineHigh: number;
-  proValue: number;
   bestRoiClip: string | null;
-  nextDollarMove: string;
+  nextStep: string;
   headline: string;
 };
 
@@ -25,29 +20,18 @@ export type FunnelStoryStep = {
 export type FunnelStory = {
   steps: FunnelStoryStep[];
   narrative: string;
-  /** linked = social may drive Tooltrace; parallel = separate tracks (finalREV-only era) */
-  mode: "linked" | "parallel";
+  /** parallel = social and site metrics shown separately (no cross-attribution) */
+  mode: "parallel";
 };
 
-export type ClipAttribution = {
-  postId: string;
-  title: string;
-  platform: PostHighlightPlatform;
-  views: number;
-  estimatedVisitors: number;
-  roiScore: number;
-  payoffNote: string;
+export type WeekPrescription = {
+  doFirst: string;
+  ignore: string;
+  betOfWeek: string;
 };
 
-export type WarRoomAlert = {
-  active: boolean;
-  severity: "hot" | "warm";
-  title: string;
-  body: string;
-  pinnedComment: string;
-  utmLink: string;
-  followUp: string;
-};
+/** @deprecated use WeekPrescription */
+export type ExecutivePrescription = WeekPrescription;
 
 export type CompetitivePulse = {
   headline: string;
@@ -70,7 +54,6 @@ export type HookEntry = {
   format?: string;
   avgViews: number;
   appearances: number;
-  visitRateEstimate: number | null;
   status: "validated" | "hypothesis";
 };
 
@@ -100,9 +83,8 @@ export type PublishPrediction = {
   platform: PostHighlightPlatform;
   viewsLow: number;
   viewsHigh: number;
-  tooltracePotential: "low" | "medium" | "high";
-  igUnless: string | null;
-  confidence: number;
+  /** How many logged posts on this platform the range is based on */
+  basedOnPosts: number;
 };
 
 export type PublishKitStep = {
@@ -120,12 +102,6 @@ export type PublishKit = {
   postOrderSummary: string;
 };
 
-export type ExecutivePrescription = {
-  doFirst: string;
-  ignore: string;
-  betOfWeek: string;
-};
-
 export type PlaybookEntry = {
   id: string;
   type: "hook" | "experiment" | "validated" | "hypothesis";
@@ -141,13 +117,10 @@ export type WeeklyIntelligence = {
   version: number;
   contentPnl: ContentPnl;
   funnelStory: FunnelStory;
-  boardNarrative: string;
-  prescription: ExecutivePrescription;
-  warRoom: WarRoomAlert | null;
+  prescription: WeekPrescription;
   competitivePulse: CompetitivePulse;
   mondayQueue: MondayQueueItem[];
   hookLibrary: HookEntry[];
-  clipAttribution: ClipAttribution[];
   repurposePlans: RepurposePlan[];
   autopsies: PostAutopsy[];
   publishPredictions: PublishPrediction[];

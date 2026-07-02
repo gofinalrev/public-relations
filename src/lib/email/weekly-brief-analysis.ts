@@ -138,7 +138,7 @@ function sectionWhatsWorking(
   }
 
   if (bullets.length === 0) {
-    bullets.push("Baseline week. Continue posting Shorts and logging post stats for comparables.");
+    bullets.push("No automated wins from synced data — add a weekly learning note or log post stats.");
   }
 
   return {
@@ -255,7 +255,7 @@ function sectionOpportunities(
   }
 
   if (bullets.length === 0) {
-    bullets.push("Publish 2–3 shop-floor Shorts per week; native-edit top performer for Instagram; one LinkedIn DFM insight per Short for finalREV quotes.");
+    bullets.push("Not enough synced data for growth suggestions — import Metricool and sync PostHog first.");
   }
 
   return {
@@ -399,16 +399,9 @@ function buildPriorities(input: BuildInput): string[] {
       input.context,
     ),
   );
-  const priorities = [
-    `Priority: ${intel.prescription.doFirst}`,
-    `Weekly focus: ${intel.prescription.betOfWeek}`,
-  ];
+  const priorities = intel.mondayQueue.slice(0, 5).map((item) => `${item.title}: ${item.body}`);
 
-  for (const item of intel.mondayQueue.slice(1, 4)) {
-    priorities.push(item.title);
-  }
-
-  return priorities.slice(0, 5);
+  return priorities;
 }
 
 function renderPlainText(analysis: Omit<WeeklyBriefAnalysis, "plainText" | "html">): string {
@@ -416,7 +409,7 @@ function renderPlainText(analysis: Omit<WeeklyBriefAnalysis, "plainText" | "html
     "finalREV · PR Weekly Brief",
     analysis.periodLabel,
     "",
-    "EXECUTIVE SUMMARY",
+    "WEEK SUMMARY",
     analysis.executiveSummary,
     "",
     "KEY METRICS",
@@ -439,7 +432,7 @@ function renderPlainText(analysis: Omit<WeeklyBriefAnalysis, "plainText" | "html
   lines.push("THIS WEEK'S PRIORITIES");
   for (const p of analysis.priorities) lines.push(`  • ${p}`);
   lines.push("");
-  lines.push(`Open PR Command Center: ${analysis.hubUrl}`);
+  lines.push(`Open PR hub: ${analysis.hubUrl}`);
 
   return lines.join("\n");
 }
@@ -512,7 +505,7 @@ function renderHtml(analysis: Omit<WeeklyBriefAnalysis, "plainText" | "html">): 
     <ol style="margin:0;padding-left:20px;">${priorityHtml}</ol>
   </div>
   <p style="margin:28px 0 0;text-align:center;">
-    <a href="${escapeHtml(analysis.hubUrl)}" style="background:#CCFF00;color:#18181b;padding:14px 28px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block;">Open PR Command Center</a>
+    <a href="${escapeHtml(analysis.hubUrl)}" style="background:#CCFF00;color:#18181b;padding:14px 28px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block;">Open PR hub</a>
   </p>
 </td></tr>
 </table>
@@ -538,17 +531,18 @@ export function buildWeeklyBriefAnalysis(input: BuildInput): WeeklyBriefAnalysis
   );
   const intel = buildWeeklyIntelligence(intelInput);
 
-  const executiveSummary = report.learning?.trim() || intel.boardNarrative;
+  const executiveSummary =
+    report.learning?.trim() || intel.contentPnl.headline || intel.prescription.doFirst;
   const metrics = buildMetrics(input);
   const sections: BriefSection[] = [
     {
-      title: "Priorities",
+      title: "This week",
       body: [
-        `Priority: ${intel.prescription.doFirst}`,
-        `Deprioritize: ${intel.prescription.ignore}`,
-        `Weekly focus: ${intel.prescription.betOfWeek}`,
-        intel.contentPnl.headline,
-      ],
+        intel.prescription.doFirst,
+        intel.prescription.betOfWeek !== intel.prescription.doFirst
+          ? intel.prescription.betOfWeek
+          : "",
+      ].filter(Boolean),
     },
     sectionWhatsWorking(report, posts),
     sectionWhatsNotWorking(report, posts),

@@ -15,15 +15,21 @@ export function buildPrescription(input: IntelligenceInput): ExecutivePrescripti
 
   const growth = filterExecutiveInsights(parseStoredInsights(report?.growth_insights ?? ""));
   const posthog = filterExecutiveInsights(parseStoredInsights(report?.posthog_insights ?? ""));
-  const noise = [...growth, ...posthog].filter((i) => i.type === "info").slice(0, 1);
+  const insight = [...growth, ...posthog].find((i) => i.type === "warning" || i.type === "info");
+
+  let ignore = linked
+    ? "Don't tie Tooltrace traffic to posts until clips are tagged Tooltrace."
+    : "Don't compare @gofinalrev views to Tooltrace visitors — different products.";
+
+  if (posts.length === 0 && (report?.metricool_video_views ?? 0) > 0) {
+    ignore = "Aggregate Metricool views without post breakdown — add individual posts before drawing clip-level conclusions.";
+  } else if (insight?.body) {
+    ignore = insight.body;
+  }
 
   return {
-    doFirst: queue[0]?.body ?? pnl.nextDollarMove,
-    ignore:
-      noise[0]?.body ??
-      (linked
-        ? "No post links logged. Add URLs to measure product traffic."
-        : "Do not judge @gofinalrev Shorts by Tooltrace site traffic until Tooltrace clips ship."),
+    doFirst: queue[0]?.body ?? pnl.nextStep,
+    ignore,
     betOfWeek: pulse.recommendation,
   };
 }

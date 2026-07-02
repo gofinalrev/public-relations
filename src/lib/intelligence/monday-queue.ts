@@ -1,30 +1,30 @@
-import { formatNumber } from "@/lib/utils";
 import { platformLabel } from "@/lib/post-highlights";
 import type { IntelligenceInput, MondayQueueItem } from "./types";
 import { buildContentPnl } from "./content-pnl";
-import { buildClipAttribution } from "./clip-attribution";
 import { buildRepurposePlans } from "./repurpose";
+import { buildCompetitivePulse } from "./competitive-pulse";
+import { canAttributeSocialToTooltrace, resolveContentFocus } from "./content-focus";
 import { parseReportBreakdown } from "./context";
 
 export function buildMondayQueue(input: IntelligenceInput): MondayQueueItem[] {
   const { report, posts } = input;
   const queue: MondayQueueItem[] = [];
   const pnl = buildContentPnl(input);
-  const clips = buildClipAttribution(input);
+  const pulse = buildCompetitivePulse(input);
   const repurpose = buildRepurposePlans(input);
+  const linked = canAttributeSocialToTooltrace(resolveContentFocus(posts));
 
   queue.push({
     priority: 1,
-    title: "Priority action",
-    body: pnl.nextDollarMove,
+    title: "Start here",
+    body: pnl.nextStep,
   });
 
-  if (clips[0]) {
+  if (!linked && (report?.posthog_visitors ?? 0) > 0 && (report?.metricool_video_views ?? 0) > 0) {
     queue.push({
       priority: 2,
-      title: `Increase distribution: ${clips[0].title}`,
-      body: `${clips[0].payoffNote} Add Tooltrace link while post has ${formatNumber(clips[0].views)} views.`,
-      platform: clips[0].platform,
+      title: "Separate the numbers",
+      body: "Tooltrace visitors aren't from your current finalREV clips — judge each product on its own metrics.",
     });
   }
 
@@ -33,8 +33,8 @@ export function buildMondayQueue(input: IntelligenceInput): MondayQueueItem[] {
     if (lag) {
       queue.push({
         priority: 3,
-        title: `Repurpose on ${platformLabel(lag.platform)}`,
-        body: `${lag.captionAngle}${lag.coverNote ? ` · ${lag.coverNote}` : ""}`,
+        title: `Cross-post to ${platformLabel(lag.platform)}`,
+        body: lag.captionAngle + (lag.coverNote ? ` ${lag.coverNote}` : ""),
         platform: lag.platform,
       });
     }
@@ -45,8 +45,8 @@ export function buildMondayQueue(input: IntelligenceInput): MondayQueueItem[] {
   for (const p of quiet.slice(0, 1)) {
     queue.push({
       priority: 4,
-      title: `${p.name} was quiet`,
-      body: "Cross-post this week's top Short with a native caption and platform-specific cover.",
+      title: `${p.name} had no activity`,
+      body: "Cross-post this week's best clip with a caption written for that platform.",
       platform: p.platform,
     });
   }
@@ -54,18 +54,17 @@ export function buildMondayQueue(input: IntelligenceInput): MondayQueueItem[] {
   if (posts.length === 0 && (report?.metricool_video_views ?? 0) > 0) {
     queue.push({
       priority: 5,
-      title: "Log top post stats",
-      body: "Add YouTube Studio / IG Insights numbers under Post performance for hook tracking.",
+      title: "Add post-level stats",
+      body: "You have aggregate views but no logged posts — add YouTube Studio / IG numbers under Post performance.",
     });
   }
 
   const topPost = posts.length ? [...posts].sort((a, b) => b.views - a.views)[0] : null;
-  if (topPost) {
+  if (topPost && pulse.recommendation !== pnl.nextStep) {
     queue.push({
       priority: 6,
-      title: "LinkedIn DFM line",
-      body: `LinkedIn post: engineering takeaway from "${topPost.title}" with quote CTA.`,
-      platform: "linkedin",
+      title: "Channel note",
+      body: pulse.recommendation,
     });
   }
 
