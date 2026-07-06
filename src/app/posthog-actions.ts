@@ -10,6 +10,12 @@ import { refreshGrowthInsights } from "@/app/metricool-actions";
 import { fetchFinalRevCadUploadsForPeriod, fetchFinalRevCadUploadsForWeek } from "@/lib/posthog/finalrev-metrics";
 import { syncFreeChannelStats } from "@/lib/social/sync";
 
+function posthogNeedsRefresh(existing: Awaited<ReturnType<typeof getWeeklyReport>>): boolean {
+  if (!existing?.posthog_synced_at) return true;
+  if (!existing.metricool_synced_at) return false;
+  return new Date(existing.metricool_synced_at).getTime() > new Date(existing.posthog_synced_at).getTime();
+}
+
 async function fetchPostHogForReport(weekStart: string) {
   const existing = await getWeeklyReport(weekStart);
   let breakdown: Record<string, unknown> | null = null;
@@ -40,7 +46,12 @@ export async function syncPostHogForWeek(weekStart: string) {
   try {
     const existing = await getWeeklyReport(weekStart);
     const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
-    if (existing?.posthog_synced_at && new Date(existing.posthog_synced_at).getTime() > tenMinutesAgo) {
+    const needsRefresh = posthogNeedsRefresh(existing);
+    if (
+      existing?.posthog_synced_at &&
+      !needsRefresh &&
+      new Date(existing.posthog_synced_at).getTime() > tenMinutesAgo
+    ) {
       return { ok: true as const, skipped: true, report: existing };
     }
 

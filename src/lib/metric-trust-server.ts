@@ -28,7 +28,7 @@ export function buildReportMetricQuality(report: WeeklyReport | null): ReportMet
     hasMetricoolData: Boolean(
       report?.metricool_synced_at && (report.metricool_video_views > 0 || report.metricool_engagement > 0),
     ),
-    hasPostHogData: Boolean(report?.posthog_synced_at && report.posthog_visitors > 0),
+    posthogSynced: Boolean(report?.posthog_synced_at),
     postHogConfigured: isPostHogConfigured(),
     stripeConfigured: isStripeConfigured(),
   };

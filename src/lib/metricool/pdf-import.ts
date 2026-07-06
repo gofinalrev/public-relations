@@ -94,6 +94,7 @@ export type MetricoolPdfImportResult =
       views: number;
       engagement: number;
       report: WeeklyReport;
+      posthogWarning?: string;
     }
   | { ok: false; error: string };
 
@@ -128,13 +129,16 @@ export async function importMetricoolPdfBuffer(
     };
 
     let posthogMetrics = null;
+    let posthogError: string | null = null;
     if (isPostHogConfigured()) {
-      posthogMetrics =
-        parsed.periodDays > 7
-          ? await fetchPostHogMetricsForPeriod(parsed.periodStart, parsed.periodEnd, weekStart).catch(
-              () => null,
-            )
-          : await fetchWeeklyPostHogMetrics(weekStart).catch(() => null);
+      try {
+        posthogMetrics =
+          parsed.periodDays > 7
+            ? await fetchPostHogMetricsForPeriod(parsed.periodStart, parsed.periodEnd, weekStart)
+            : await fetchWeeklyPostHogMetrics(weekStart);
+      } catch (error) {
+        posthogError = error instanceof Error ? error.message : "PostHog fetch failed";
+      }
     }
 
     const prevReport = await getWeeklyReport(getPreviousWeekKey(weekStart));
@@ -242,6 +246,7 @@ export async function importMetricoolPdfBuffer(
       views: parsed.metrics.totalVideoViews,
       engagement: parsed.metrics.totalEngagement,
       report,
+      posthogWarning: posthogError ?? undefined,
     };
   } catch (error) {
     return {

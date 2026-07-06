@@ -9,7 +9,8 @@ export type ReportMetricQuality = {
   subscriptionEventUsed: string | null;
   funnelInferred: boolean;
   hasMetricoolData: boolean;
-  hasPostHogData: boolean;
+  /** PostHog pull completed for this period (0 visitors is still valid). */
+  posthogSynced: boolean;
   postHogConfigured: boolean;
   stripeConfigured: boolean;
 };
@@ -89,8 +90,8 @@ export function getDataTrustWarnings(
   if (!quality.hasMetricoolData) {
     warnings.push("Social metrics need a Metricool PDF import for this period.");
   }
-  if (quality.postHogConfigured && !quality.hasPostHogData) {
-    warnings.push("Tooltrace visitor count not synced for this period yet.");
+  if (quality.postHogConfigured && !quality.posthogSynced) {
+    warnings.push("Tooltrace visitors haven't been pulled from PostHog for this period yet.");
   }
   if (includeGlobal && !quality.postHogConfigured) {
     warnings.push("PostHog not configured — site metrics will be empty.");

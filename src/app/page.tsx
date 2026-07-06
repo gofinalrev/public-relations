@@ -78,7 +78,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   await syncSocialChannels();
 
   if (isPostHogConfigured()) {
-    await syncPostHogForWeek(weekStart);
+    const posthogResult = await syncPostHogForWeek(weekStart);
+    if (!posthogResult.ok && posthogResult.error) {
+      logOps(`PostHog sync failed: ${posthogResult.error}`);
+    }
   }
 
   if (isMetricoolConfigured()) {

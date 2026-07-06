@@ -9,7 +9,7 @@ export function periodHasReportData(args: {
 }): boolean {
   const { pdfMeta, metricQuality, postsLogged, metrics } = args;
   if (pdfMeta) return true;
-  if (metricQuality.hasMetricoolData || metricQuality.hasPostHogData) return true;
+  if (metricQuality.hasMetricoolData) return true;
   if (postsLogged > 0) return true;
   return (
     metrics.views > 0 ||
