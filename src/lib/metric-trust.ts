@@ -57,7 +57,7 @@ export function resolveProSubsDisplay(subs: number, quality: ReportMetricQuality
   if (quality.proSubsSource === "unconfigured") {
     return {
       displayValue: "—",
-      sublabel: subs > 0 ? `PostHog logged ${subs} (not billing-verified)` : "Not tracked (Stripe not connected)",
+      sublabel: subs > 0 ? `${formatNumber(subs)} unverified` : "Not in Stripe",
       unavailable: true,
       showDelta: false,
     };
@@ -98,9 +98,9 @@ export function getDataTrustWarnings(
     warnings.push("PostHog not configured — site metrics will be empty.");
   }
   if (includeGlobal && quality.proSubsSource === "unconfigured") {
-    warnings.push("Pro subscriptions are not billing-verified. Connect Stripe before trusting sub counts.");
+    warnings.push("Pro subs require Stripe for billing counts.");
   } else if (quality.proSubsSource === "posthog") {
-    warnings.push("Pro subs come from PostHog events, not Stripe billing. Treat as directional only.");
+    warnings.push("Pro subs from PostHog events — not billing-verified.");
   }
   if (quality.funnelInferred) {
     warnings.push("Funnel upload/generate steps are estimated, not measured. Download CAD is the reliable step.");

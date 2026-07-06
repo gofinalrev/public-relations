@@ -91,14 +91,8 @@ export function getIntegrationWarnings(
   if (metricQuality?.proSubsSource === "unconfigured") {
     warnings.push({
       id: "subs-unverified",
-      level: "warning",
-      message: "Pro subscriptions are not billing-verified. Connect Stripe before trusting sub counts.",
-    });
-  } else if (metricQuality?.proSubsSource === "posthog") {
-    warnings.push({
-      id: "subs-posthog",
       level: "info",
-      message: "Pro subs from PostHog events, not Stripe billing. Directional only.",
+      message: "Pro subs need Stripe for billing counts.",
     });
   }
 

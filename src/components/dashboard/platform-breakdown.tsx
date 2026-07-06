@@ -12,16 +12,7 @@ type PlatformBreakdownProps = {
 };
 
 export function PlatformBreakdown({ report, periodLabel }: PlatformBreakdownProps) {
-  if (!report?.metricool_breakdown_json) {
-    return (
-      <Card className="border-dashed border-foreground/10">
-        <CardHeader>
-          <CardTitle>Social by platform</CardTitle>
-          <CardDescription>Import a Metricool PDF for per-platform views and engagement.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
+  if (!report?.metricool_breakdown_json) return null;
 
   let data: MetricoolWeeklyMetrics | null = null;
   try {

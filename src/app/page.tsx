@@ -191,7 +191,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             prev={prev}
             history={history}
             postHighlightsJson={report?.post_highlights_json}
-            intelligence={intelligence}
             postsLogged={postsLogged}
             metricQuality={metricQuality}
             report={report}
@@ -199,7 +198,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         ) : activeView === "period" ? (
           <>
             <WeeklyChecklist hasPdf={Boolean(pdfMeta)} postsLogged={postsLogged} />
-            <DataTrustBanner quality={metricQuality} context={periodContext} />
+            <DataTrustBanner quality={metricQuality} context={periodContext} includeGlobalConfig={false} />
             <PeriodScopeBanner context={periodContext} variant="compact" />
 
             <MetricoolPdfUpload

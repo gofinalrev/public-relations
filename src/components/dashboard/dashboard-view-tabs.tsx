@@ -14,7 +14,7 @@ type DashboardViewTabsProps = {
 
 const TABS: { id: DashboardView; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "period", label: "Details", icon: CalendarDays },
+  { id: "period", label: "Period", icon: CalendarDays },
   { id: "trends", label: "Trends", icon: LineChart },
   { id: "toolkit", label: "Toolkit", icon: Briefcase },
 ];
@@ -53,7 +53,7 @@ export function DashboardViewTabs({ weekStart, activeView }: DashboardViewTabsPr
                 : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
-            <Icon className="size-4 shrink-0" />
+            <Icon className="size-4 shrink-0 opacity-70" />
             {label}
           </button>
         );

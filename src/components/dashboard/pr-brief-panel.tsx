@@ -4,10 +4,9 @@ import { analyzeHistory, topPlatformByHistoricalViews } from "@/lib/history-anal
 import { parseStoredInsights } from "@/lib/action-items";
 import { filterExecutiveInsights } from "@/lib/ops-log";
 import { SOCIAL_PLATFORMS } from "@/lib/platforms";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatNumber } from "@/lib/utils";
-import { Megaphone, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 
 type PrBriefPanelProps = {
   context: DashboardPeriodContext;
@@ -25,51 +24,40 @@ export function PrBriefPanel({ context, report, previousWeek, history }: PrBrief
   );
   const topHistoricalPlatform = topPlatformByHistoricalViews(analytics.platformTotals);
 
+  const hasPeak =
+    analytics.bestWeek &&
+    analytics.bestWeek.views > analytics.current.views &&
+    analytics.current.views > 0;
+  const hasLeader = topHistoricalPlatform && analytics.weeksRecorded >= 2;
+
+  if (!topInsight && !hasPeak && !hasLeader) return null;
+
   return (
-    <Card className="border-primary/15 h-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Megaphone className="size-5 text-primary" />
-          Top insight
-        </CardTitle>
-        <CardDescription>One headline from this period.</CardDescription>
+    <Card className="h-full border-foreground/[0.08]">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base font-medium">Highlight</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {topInsight ? (
-          <div className="border border-foreground/[0.08] bg-muted/20 p-3">
-            <Badge variant={topInsight.type === "success" ? "default" : "secondary"} className="mb-2 capitalize">
-              {topInsight.type}
-            </Badge>
-            <p className="text-sm font-semibold">{topInsight.title}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{topInsight.body}</p>
+      <CardContent className="space-y-3 text-sm">
+        {topInsight && (
+          <div>
+            <p className="font-medium">{topInsight.title}</p>
+            <p className="mt-1 text-muted-foreground">{topInsight.body}</p>
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Import a Metricool PDF for insights on social performance this period.
-          </p>
         )}
 
-        {topHistoricalPlatform && analytics.weeksRecorded >= 2 && (
-          <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+        {hasLeader && (
+          <p className="flex items-start gap-1.5 text-muted-foreground">
             <TrendingUp className="mt-0.5 size-3.5 shrink-0" />
             <span>
-              <span className="font-medium text-foreground">All-time leader:</span>{" "}
-              {SOCIAL_PLATFORMS[topHistoricalPlatform.slug].name},{" "}
-              {formatNumber(topHistoricalPlatform.views)} views across {analytics.weeksRecorded} weeks.
+              {SOCIAL_PLATFORMS[topHistoricalPlatform.slug].name} leads all-time with{" "}
+              {formatNumber(topHistoricalPlatform.views)} views ({analytics.weeksRecorded} weeks logged).
             </span>
           </p>
         )}
 
-        {analytics.bestWeek && analytics.bestWeek.views > analytics.current.views && analytics.current.views > 0 && (
-          <p className="text-sm text-muted-foreground">
-            Peak week: {analytics.bestWeek.label} ({formatNumber(analytics.bestWeek.views)} views). vs{" "}
-            {context.activityLabel}.
-          </p>
-        )}
-
-        {analytics.weeksRecorded < 2 && (
-          <p className="text-xs text-muted-foreground">
-            Log a few weekly PDFs to enable 4-week averages on Trends.
+        {hasPeak && (
+          <p className="text-muted-foreground">
+            Peak week: {analytics.bestWeek!.label} ({formatNumber(analytics.bestWeek!.views)} views).
           </p>
         )}
       </CardContent>

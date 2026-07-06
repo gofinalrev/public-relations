@@ -75,8 +75,8 @@ export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact, au
   return (
     <Card className="border-foreground/[0.08]">
       <CardHeader className={compact ? "pb-2" : "pb-3"}>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Clapperboard className="size-5 text-primary" />
+        <CardTitle className={compact ? "text-sm font-medium" : "flex items-center gap-2 text-base"}>
+          {!compact && <Clapperboard className="size-5 text-primary" />}
           {compact ? "Top posts" : "Post performance"}
         </CardTitle>
         {!compact && (

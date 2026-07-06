@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { MetricoolPdfMeta, WeeklyReport } from "@/lib/db";
 import type { OverviewViewProps } from "@/lib/overview-summary";
-import type { WeeklyIntelligence } from "@/lib/intelligence/types";
 import type { ReportMetricQuality } from "@/lib/metric-trust";
 import { resolveProSubsDisplay } from "@/lib/metric-trust";
 import { pdfDownloadUrl, pdfViewUrl } from "@/lib/overview-summary";
+import { formatWeekLabel, parseWeekKey } from "@/lib/weeks";
 import {
   findLatestReportedWeek,
   hasLiveSiteMetrics,
@@ -14,11 +14,9 @@ import {
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { PostHighlightsPanel } from "@/components/dashboard/post-highlights-panel";
 import { PostHogInsightsPanel } from "@/components/dashboard/posthog-insights-panel";
-import { IntelligenceOverview } from "@/components/dashboard/intelligence/intelligence-overview";
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { Button } from "@/components/ui/button";
 import { OverviewSummaryCard } from "@/components/dashboard/overview-summary-card";
-import { DataTrustBanner } from "@/components/dashboard/data-trust-banner";
 import { parsePostHighlights } from "@/lib/post-highlights";
 import {
   Play,
@@ -31,14 +29,6 @@ import {
   Upload,
 } from "lucide-react";
 
-const headlineTone: Record<string, string> = {
-  learning: "border-primary/25 bg-primary/5",
-  success: "border-primary/30 bg-primary/10",
-  warning: "border-amber-500/30 bg-amber-500/5",
-  critical: "border-destructive/30 bg-destructive/5",
-  info: "border-foreground/10 bg-muted/30",
-};
-
 function syncedSublabel(source: string, syncedAt: string | null | undefined): string {
   if (!syncedAt) return source;
   const when = new Date(syncedAt).toLocaleString(undefined, {
@@ -47,7 +37,7 @@ function syncedSublabel(source: string, syncedAt: string | null | undefined): st
     hour: "numeric",
     minute: "2-digit",
   });
-  return `${source} · synced ${when}`;
+  return `${source} · ${when}`;
 }
 
 export function OverviewView({
@@ -59,12 +49,10 @@ export function OverviewView({
   prev,
   history,
   postHighlightsJson,
-  intelligence,
   postsLogged = 0,
   metricQuality,
   report = null,
 }: OverviewViewProps & {
-  intelligence: WeeklyIntelligence;
   postsLogged?: number;
   metricQuality: ReportMetricQuality;
   report?: WeeklyReport | null;
@@ -84,20 +72,14 @@ export function OverviewView({
     metrics,
   });
   const lastReportedWeek = findLatestReportedWeek(history, weekStart);
-  const showIntel =
-    socialReady || postsCount > 0 || summary.summaryLines.length > 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Reporting period
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{context.activityLabel}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{context.activityLabel}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {context.periodDays > 7 ? `${context.periodDays}-day report` : "Weekly report"}
-            {siteLive && !socialReady ? " · site metrics live" : ""}
+            {context.periodDays > 7 ? `${context.periodDays}-day period` : "Weekly period"}
           </p>
         </div>
         {pdfMeta && (
@@ -105,11 +87,11 @@ export function OverviewView({
             <Button variant="secondary" size="sm" asChild>
               <a href={pdfViewUrl(weekStart)} target="_blank" rel="noopener noreferrer">
                 <Eye className="size-3.5" />
-                View report
+                PDF
               </a>
             </Button>
             <Button variant="outline" size="sm" className="hidden sm:inline-flex" asChild>
-              <a href={pdfDownloadUrl(weekStart)} download={pdfMeta.filename} aria-label="Download report">
+              <a href={pdfDownloadUrl(weekStart)} download={pdfMeta.filename} aria-label="Download PDF">
                 <Download className="size-3.5" />
               </a>
             </Button>
@@ -119,38 +101,35 @@ export function OverviewView({
 
       {!showOverview ? (
         <p className="text-sm text-muted-foreground">
-          Site metrics sync from PostHog on load.{" "}
-          <Link href={periodLink} className="font-medium text-foreground underline-offset-4 hover:underline">
-            Period tab
+          Site metrics load automatically. Import social data on the{" "}
+          <Link href={periodLink} className="text-foreground underline-offset-4 hover:underline">
+            Period
           </Link>{" "}
-          for Metricool PDF import.
+          tab.
           {lastReportedWeek && (
             <>
-              {" "}
+              {" · "}
               <Link
                 href={`/?week=${lastReportedWeek.week_start}`}
-                className="font-medium text-foreground underline-offset-4 hover:underline"
+                className="text-foreground underline-offset-4 hover:underline"
               >
-                View {lastReportedWeek.week_start}
+                {formatWeekLabel(parseWeekKey(lastReportedWeek.week_start))}
               </Link>
             </>
           )}
         </p>
       ) : (
         <>
-          <DataTrustBanner
-            quality={metricQuality}
-            context={context}
-            includeGlobalConfig={false}
-            includeSocialPending={false}
-          />
+          {(summary.summaryLines.length > 0 || summary.teamNote) && (
+            <OverviewSummaryCard lines={summary.summaryLines} teamNote={summary.teamNote} />
+          )}
 
           <section>
-            <SectionHeader title="Key numbers" />
+            <SectionHeader title="Metrics" />
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               <MetricCard
                 label="Video views"
-                sublabel={socialReady ? "Metricool · social" : "Imports with PDF"}
+                sublabel={socialReady ? "Social" : "Pending PDF"}
                 value={metrics.views}
                 displayValue={socialReady ? undefined : "—"}
                 unavailable={!socialReady}
@@ -161,8 +140,8 @@ export function OverviewView({
                 variant="compact"
               />
               <MetricCard
-                label="Reach + clicks"
-                sublabel={socialReady ? "Metricool · social" : "Imports with PDF"}
+                label="Reach"
+                sublabel={socialReady ? "Social" : "Pending PDF"}
                 value={metrics.engagement}
                 displayValue={socialReady ? undefined : "—"}
                 unavailable={!socialReady}
@@ -174,7 +153,7 @@ export function OverviewView({
               />
               <MetricCard
                 label="Tooltrace visitors"
-                sublabel={syncedSublabel("PostHog · unique", report?.posthog_synced_at)}
+                sublabel={syncedSublabel("PostHog", report?.posthog_synced_at)}
                 value={metrics.visitors}
                 displayValue={siteLive ? undefined : "—"}
                 unavailable={!siteLive}
@@ -186,7 +165,7 @@ export function OverviewView({
                 highlight={siteLive}
               />
               <MetricCard
-                label="Pro subscriptions"
+                label="Pro subs"
                 sublabel={proSubs.sublabel}
                 value={metrics.subs}
                 displayValue={proSubs.displayValue}
@@ -199,7 +178,7 @@ export function OverviewView({
               />
               <MetricCard
                 label="STEP uploads"
-                sublabel={syncedSublabel("PostHog · finalrev.com", report?.posthog_synced_at)}
+                sublabel={syncedSublabel("PostHog", report?.posthog_synced_at)}
                 value={cadUploads}
                 displayValue={siteLive ? undefined : "—"}
                 unavailable={!siteLive}
@@ -210,34 +189,9 @@ export function OverviewView({
                 variant="compact"
               />
             </div>
-            {!socialReady && (
-              <p className="mt-3 text-xs text-muted-foreground">
-                Social columns fill in on{" "}
-                <Link href={periodLink} className="underline-offset-4 hover:underline">
-                  Period tab
-                </Link>{" "}
-                when the Metricool PDF is imported.
-              </p>
-            )}
           </section>
 
-          {siteLive && <PostHogInsightsPanel report={report} />}
-
-          {(summary.summaryLines.length > 0 || summary.teamNote) && (
-            <OverviewSummaryCard
-              lines={summary.summaryLines}
-              teamNote={summary.teamNote}
-              tone={headlineTone[summary.headlineType ?? "info"] ?? headlineTone.info}
-            />
-          )}
-
-          {showIntel && (
-            <IntelligenceOverview
-              intel={intelligence}
-              metricQuality={metricQuality}
-              socialReady={socialReady}
-            />
-          )}
+          {siteLive && <PostHogInsightsPanel report={report} compact />}
 
           <PostHighlightsPanel
             weekStart={weekStart}
@@ -247,10 +201,10 @@ export function OverviewView({
         </>
       )}
 
-      <div className="flex justify-center border-t border-foreground/[0.06] pt-6">
-        <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-primary">
+      <div className="flex justify-center border-t border-foreground/[0.06] pt-5">
+        <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
           <Link href={periodLink}>
-            Platform breakdown, goals & funnel
+            Period details
             <ArrowRight className="size-3.5" />
           </Link>
         </Button>
