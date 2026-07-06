@@ -5,8 +5,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DashboardBarChart } from "@/components/dashboard/dashboard-charts";
 import { formatWeekLabel, parseWeekKey } from "@/lib/weeks";
 import { Lightbulb } from "lucide-react";
+import { useEffect, useState } from "react";
+
+function useTrendChartHeight() {
+  const [height, setHeight] = useState(280);
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setHeight(w < 640 ? 240 : w < 1024 ? 280 : 300);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return height;
+}
 
 export function TrendsChart({ history }: { history: WeeklyReport[]; currentWeekKey?: string }) {
+  const chartHeight = useTrendChartHeight();
+
   if (history.length === 0) {
     return (
       <Card>
@@ -45,7 +62,7 @@ export function TrendsChart({ history }: { history: WeeklyReport[]; currentWeekK
             { name: "Tooltrace visitors", data: chartData.map((d) => d.visitors), color: "hsl(0 0% 55%)" },
             { name: "Tooltrace Pro", data: chartData.map((d) => d.subs), color: "hsl(72 100% 35%)" },
           ]}
-          height={300}
+          height={chartHeight}
         />
       </CardContent>
     </Card>
@@ -101,7 +118,7 @@ export function HistoryTable({ history }: { history: WeeklyReport[] }) {
         <CardDescription>Each row shows that week&apos;s period totals.</CardDescription>
       </CardHeader>
       <CardContent className="overflow-x-auto overscroll-x-contain">
-        <table className="w-full min-w-[36rem] text-sm">
+        <table className="w-full min-w-[32rem] text-sm sm:min-w-[36rem]">
           <thead>
             <tr className="border-b border-border bg-muted text-left text-xs uppercase tracking-wider text-muted-foreground">
               <th className="p-3 font-medium">Week</th>

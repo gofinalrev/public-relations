@@ -10,7 +10,7 @@ export default function AccessDeniedPage() {
   const authOn = isAuthConfigured();
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6">
+    <main className="safe-top safe-bottom flex min-h-dvh items-center justify-center bg-background px-4 sm:px-6">
       <div className="max-w-md text-center">
         <p className="text-sm font-medium uppercase tracking-wider text-muted-foreground">finalREV PR</p>
         <h1 className="mt-2 text-2xl font-semibold">Shop admin access only</h1>

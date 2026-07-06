@@ -133,7 +133,7 @@ export function MetricoolPdfUpload({
         onClick={() => inputRef.current?.click()}
         onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
         className={cn(
-          "flex cursor-pointer flex-col gap-3 border border-dashed px-3 py-3 transition-colors sm:flex-row sm:items-center sm:gap-4 sm:px-4",
+          "flex min-h-[44px] cursor-pointer flex-col gap-3 border border-dashed px-3 py-4 transition-colors sm:min-h-0 sm:flex-row sm:items-center sm:gap-4 sm:px-4 sm:py-3",
           dragOver ? "border-primary bg-primary/5" : "border-foreground/10 bg-card/50 hover:border-primary/40",
         )}
       >

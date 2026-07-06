@@ -9,13 +9,10 @@ type MetricCardProps = {
   highlight?: boolean;
   comparisonLabel?: string;
   icon?: LucideIcon;
-  /** e.g. "4-wk avg: 1.2K · 12-wk total: 8.4K" */
   historicalContext?: string;
   periodHint?: string;
   variant?: "default" | "compact";
-  /** Override formatted number (e.g. "—" when metric unavailable) */
   displayValue?: string;
-  /** Hide WoW delta even when previous exists */
   hideDelta?: boolean;
   unavailable?: boolean;
 };
@@ -59,14 +56,19 @@ export function MetricCard({
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-              "font-semibold text-foreground",
-              compact ? "text-sm" : "text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground",
+              "leading-tight font-semibold text-foreground",
+              compact ? "text-xs sm:text-sm" : "text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground",
             )}
           >
             {label}
           </p>
           {sublabel && (
-            <p className={cn("truncate text-muted-foreground", compact ? "text-xs" : "mt-1 text-xs text-muted-foreground/80")}>
+            <p
+              className={cn(
+                "mt-0.5 line-clamp-2 text-muted-foreground",
+                compact ? "text-[10px] leading-snug sm:text-xs" : "mt-1 text-xs text-muted-foreground/80",
+              )}
+            >
               {sublabel}
             </p>
           )}
@@ -80,19 +82,24 @@ export function MetricCard({
           <div
             className={cn(
               "flex shrink-0 items-center justify-center rounded-lg border border-foreground/[0.06] bg-muted/50 text-primary",
-              compact ? "size-8" : "size-9",
+              compact ? "size-7 sm:size-8" : "size-9",
             )}
           >
-            <Icon className={compact ? "size-3.5" : "size-4"} />
+            <Icon className={compact ? "size-3 sm:size-3.5" : "size-4"} />
           </div>
         )}
       </div>
 
-      <div className={cn("flex items-end justify-between gap-2", compact ? "mt-2" : "mt-3 sm:mt-4")}>
+      <div
+        className={cn(
+          "mt-2 flex items-end justify-between gap-1.5 sm:mt-2.5 sm:gap-2",
+          !compact && "sm:mt-3 md:mt-4",
+        )}
+      >
         <p
           className={cn(
-            "font-bold tabular-nums tracking-tight",
-            compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl",
+            "min-w-0 font-bold tabular-nums tracking-tight",
+            compact ? "text-xl sm:text-2xl lg:text-3xl" : "text-3xl sm:text-4xl",
             highlight && "text-primary",
           )}
         >
@@ -101,10 +108,12 @@ export function MetricCard({
         <DeltaBadge delta={delta} comparisonLabel={comparisonLabel} compact={compact} />
       </div>
       {!compact && historicalContext && (
-        <p className="mt-2 border-t border-foreground/[0.06] pt-2 text-[11px] text-muted-foreground">{historicalContext}</p>
+        <p className="mt-2 border-t border-foreground/[0.06] pt-2 text-[11px] text-muted-foreground">
+          {historicalContext}
+        </p>
       )}
       {compact && historicalContext && (
-        <p className="mt-1.5 text-[10px] text-muted-foreground">{historicalContext}</p>
+        <p className="mt-1.5 line-clamp-2 text-[10px] leading-snug text-muted-foreground">{historicalContext}</p>
       )}
     </div>
   );
@@ -122,7 +131,7 @@ function DeltaBadge({
   if (delta.positive === null) {
     if (compact) return null;
     return (
-      <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+      <span className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground">
         <Minus className="size-3" />
         {comparisonLabel}
       </span>
@@ -132,7 +141,7 @@ function DeltaBadge({
   return (
     <span
       className={cn(
-        "flex items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-xs font-semibold",
+        "flex shrink-0 items-center gap-0.5 rounded-md border px-1 py-0.5 text-[10px] font-semibold sm:px-1.5 sm:text-xs",
         delta.positive
           ? "border-primary/30 bg-primary/10 text-primary"
           : "border-destructive/30 bg-destructive/10 text-destructive",

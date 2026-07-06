@@ -103,6 +103,30 @@ export function DashboardBarChart({
         markers: { size: 6, shape: "circle", offsetX: -2 },
         itemMargin: { horizontal: 12, vertical: 4 },
       },
+      responsive: [
+        {
+          breakpoint: 768,
+          options: {
+            legend: {
+              position: "bottom",
+              horizontalAlign: "center",
+              itemMargin: { horizontal: 8, vertical: 2 },
+            },
+            plotOptions: {
+              bar: {
+                columnWidth: stacked ? "65%" : "72%",
+              },
+            },
+            xaxis: {
+              labels: {
+                rotate: -45,
+                rotateAlways: categories.length > 6,
+                style: { fontSize: "10px" },
+              },
+            },
+          },
+        },
+      ],
       tooltip: {
         theme: isDark ? "dark" : "light",
         y: { formatter: (v) => yFormatter(Number(v)) },
@@ -190,6 +214,24 @@ export function DashboardAreaChart({ categories, series, height = 260 }: Dashboa
         labels: { colors: isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.65)" },
         markers: { size: 6, shape: "circle" },
       },
+      responsive: [
+        {
+          breakpoint: 768,
+          options: {
+            legend: {
+              position: "bottom",
+              horizontalAlign: "center",
+            },
+            xaxis: {
+              labels: {
+                rotate: -45,
+                rotateAlways: categories.length > 6,
+                style: { fontSize: "10px" },
+              },
+            },
+          },
+        },
+      ],
       tooltip: { theme: isDark ? "dark" : "light" },
     }),
     [categories, isDark, series],

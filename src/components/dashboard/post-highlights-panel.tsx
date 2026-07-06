@@ -253,8 +253,8 @@ function PostHighlightRow({
           )}
         </div>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {platformLabel(post.platform)} · {formatNumber(post.views)} views
-          {!compact && ` · ${post.likes} likes`}
+          {platformLabel(post.platform)}
+          {!compact && ` · ${formatNumber(post.views)} views · ${post.likes} likes`}
           {!compact && post.publishedAt ? ` · ${post.publishedAt}` : ""}
         </p>
         {!compact && post.notes && (
@@ -273,7 +273,10 @@ function PostHighlightRow({
         )}
       </div>
       {!compact && (
-        <p className="text-lg font-bold tabular-nums text-primary">{formatNumber(post.views)}</p>
+        <p className="shrink-0 text-lg font-bold tabular-nums text-primary">{formatNumber(post.views)}</p>
+      )}
+      {compact && (
+        <p className="shrink-0 text-base font-bold tabular-nums text-primary sm:text-lg">{formatNumber(post.views)}</p>
       )}
       {url && (
         <ExternalLink

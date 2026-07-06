@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { MetricoolPdfMeta, WeeklyReport } from "@/lib/db";
+import type { WeeklyReport } from "@/lib/db";
 import type { OverviewViewProps } from "@/lib/overview-summary";
 import type { ReportMetricQuality } from "@/lib/metric-trust";
 import { resolveProSubsDisplay } from "@/lib/metric-trust";
@@ -76,8 +76,10 @@ export function OverviewView({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{context.activityLabel}</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-balance text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">
+            {context.activityLabel}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {context.periodDays > 7 ? `${context.periodDays}-day period` : "Weekly period"}
           </p>
@@ -126,7 +128,7 @@ export function OverviewView({
 
           <section>
             <SectionHeader title="Metrics" />
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 xl:grid-cols-5">
               <MetricCard
                 label="Video views"
                 sublabel={socialReady ? "Social" : "Pending PDF"}

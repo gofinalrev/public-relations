@@ -12,7 +12,7 @@ export function OverviewSummaryCard({ lines, teamNote }: OverviewSummaryCardProp
   return (
     <div className="space-y-3 border-l-2 border-foreground/10 pl-4">
       {lines.map((line, i) => (
-        <p key={`${line.product}-${i}`} className="text-sm leading-relaxed text-foreground/90">
+        <p key={`${line.product}-${i}`} className="text-sm leading-relaxed text-foreground/90 sm:text-base">
           <span className="font-medium text-foreground">{summaryProductLabel(line.product)}.</span>{" "}
           {line.text}
         </p>

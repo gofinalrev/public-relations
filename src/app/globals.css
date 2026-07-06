@@ -195,6 +195,14 @@
     padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
   }
 
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .dashboard-shell {
+    @apply mx-auto w-full max-w-6xl xl:max-w-7xl;
+  }
+
   .touch-target {
     min-height: 44px;
     min-width: 44px;

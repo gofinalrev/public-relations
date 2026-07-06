@@ -152,16 +152,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   return (
     <>
       <OpsLogSink messages={integrationOpsNotes} />
-      <header className="sticky top-0 z-30 border-b border-foreground/[0.06] bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
-        <div className="mx-auto max-w-6xl px-3 py-3 sm:px-6">
+      <header className="safe-top sticky top-0 z-30 border-b border-foreground/[0.06] bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
+        <div className="dashboard-shell px-4 py-3 sm:px-6 sm:py-3.5">
           <div className="flex items-center justify-between gap-3">
             <FinalrevLogo />
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
               <UserMenu />
               <ThemeToggle />
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             {!authEnabled && (
               <TeamShareLink
                 share={share}
@@ -169,14 +169,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 isPinned={Boolean(storedTeamUrl?.trim())}
               />
             )}
-            <Suspense fallback={<div className="h-10 flex-1 animate-pulse rounded-lg bg-muted sm:max-w-xs" />}>
+            <Suspense fallback={<div className="h-11 w-full animate-pulse rounded-lg bg-muted sm:max-w-xs" />}>
               <WeekSelector weekStart={weekStart} />
             </Suspense>
           </div>
         </div>
       </header>
 
-      <main className="safe-bottom mx-auto max-w-6xl space-y-5 px-3 py-5 sm:space-y-6 sm:px-6 sm:py-6">
+      <main className="safe-bottom dashboard-shell space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-6 lg:py-8">
         <Suspense fallback={null}>
           <DashboardViewTabs weekStart={weekStart} activeView={activeView} />
         </Suspense>
@@ -220,7 +220,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
             <section>
               <SectionHeader title="Metrics" />
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
                 <MetricCard
                   label="Video views"
                   sublabel="Metricool · social"
