@@ -8,6 +8,7 @@ type DataTrustBannerProps = {
   context?: DashboardPeriodContext;
   className?: string;
   includeGlobalConfig?: boolean;
+  includeSocialPending?: boolean;
 };
 
 export function DataTrustBanner({
@@ -15,8 +16,12 @@ export function DataTrustBanner({
   context,
   className,
   includeGlobalConfig = true,
+  includeSocialPending = true,
 }: DataTrustBannerProps) {
-  const warnings = getDataTrustWarnings(quality, context, { includeGlobalConfig });
+  const warnings = getDataTrustWarnings(quality, context, {
+    includeGlobalConfig,
+    includeSocialPending,
+  });
   if (warnings.length === 0) return null;
 
   return (

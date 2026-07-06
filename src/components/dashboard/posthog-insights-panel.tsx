@@ -44,17 +44,7 @@ const insightVariant: Record<string, "default" | "warning" | "success" | "second
 
 export function PostHogInsightsPanel({ report }: PostHogInsightsPanelProps) {
   if (!report?.posthog_insights && !report?.posthog_funnel_json) {
-    return (
-      <Card className="border-dashed border-foreground/10">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="size-5 text-muted-foreground" />
-            Site metrics
-          </CardTitle>
-          <CardDescription>Tooltrace funnel and conversion for this period.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
+    return null;
   }
 
   let funnelData: FunnelData = {};

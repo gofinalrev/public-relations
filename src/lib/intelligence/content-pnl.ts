@@ -47,9 +47,11 @@ export function buildContentPnl(input: IntelligenceInput): ContentPnl {
     const socialPart = `${formatNumber(views)} @gofinalrev views${viewsDelta ? ` (${viewsDelta})` : ""}`;
     headline = `${socialPart}. ${formatNumber(visitors)} Tooltrace visitors.`;
   } else if (visitors > 0) {
-    headline = `${formatNumber(visitors)} Tooltrace visitors this period`;
+    headline = `${formatNumber(visitors)} Tooltrace visitors · ${stepUploads} STEP upload${stepUploads === 1 ? "" : "s"}`;
+  } else if (stepUploads > 0) {
+    headline = `${stepUploads} STEP upload${stepUploads === 1 ? "" : "s"} on finalrev.com this period`;
   } else {
-    headline = "Waiting on Metricool PDF and PostHog sync for this period";
+    headline = "Site metrics sync from PostHog; social views import with the Metricool PDF";
   }
 
   if (focus === "tooltrace" || focus === "mixed") {

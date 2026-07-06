@@ -16,18 +16,20 @@ import {
 export function IntelligenceOverview({
   intel,
   metricQuality,
+  socialReady = true,
 }: {
   intel: WeeklyIntelligence;
   metricQuality: ReportMetricQuality;
+  socialReady?: boolean;
 }) {
   const proSubs = resolveProSubsDisplay(intel.contentPnl.proSubs, metricQuality);
 
   return (
     <div className="space-y-4">
-      <ContentPnlCard pnl={intel.contentPnl} proSubs={proSubs} />
-      <FunnelStoryCard story={intel.funnelStory} />
-      <MondayQueueCard queue={intel.mondayQueue} />
-      <CompetitivePulseCard pulse={intel.competitivePulse} />
+      <ContentPnlCard pnl={intel.contentPnl} proSubs={proSubs} socialReady={socialReady} />
+      <FunnelStoryCard story={intel.funnelStory} socialReady={socialReady} />
+      {socialReady && <MondayQueueCard queue={intel.mondayQueue} />}
+      {socialReady && <CompetitivePulseCard pulse={intel.competitivePulse} />}
       {intel.playbook.length > 0 && <PlaybookCard entries={intel.playbook} />}
     </div>
   );
@@ -36,9 +38,11 @@ export function IntelligenceOverview({
 function ContentPnlCard({
   pnl,
   proSubs,
+  socialReady,
 }: {
   pnl: WeeklyIntelligence["contentPnl"];
   proSubs: ReturnType<typeof resolveProSubsDisplay>;
+  socialReady: boolean;
 }) {
   return (
     <Card className="border-primary/25 bg-primary/[0.03]">
@@ -51,7 +55,9 @@ function ContentPnlCard({
       </CardHeader>
       <CardContent>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <PnlStat label="Social views" value={formatNumber(pnl.socialViews)} source="Metricool PDF" />
+          {socialReady && (
+            <PnlStat label="Social views" value={formatNumber(pnl.socialViews)} source="Metricool PDF" />
+          )}
           <PnlStat label="Tooltrace visitors" value={formatNumber(pnl.tooltraceVisitors)} source="PostHog" />
           <PnlStat label="Pro subs" value={proSubs.displayValue} source={proSubs.sublabel} unavailable={proSubs.unavailable} />
           <PnlStat label="STEP uploads" value={String(pnl.stepUploads)} source="PostHog · finalrev.com" />
@@ -61,9 +67,11 @@ function ContentPnlCard({
             <span className="font-medium text-foreground">Top logged post:</span> {pnl.bestRoiClip}
           </p>
         )}
-        <p className="mt-2 text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">Next:</span> {pnl.nextStep}
-        </p>
+        {socialReady && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Next:</span> {pnl.nextStep}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -89,8 +97,14 @@ function PnlStat({
   );
 }
 
-function FunnelStoryCard({ story }: { story: WeeklyIntelligence["funnelStory"] }) {
-  const socialSteps = story.steps.filter((s) => s.track === "social");
+function FunnelStoryCard({
+  story,
+  socialReady,
+}: {
+  story: WeeklyIntelligence["funnelStory"];
+  socialReady: boolean;
+}) {
+  const socialSteps = socialReady ? story.steps.filter((s) => s.track === "social") : [];
   const tooltraceSteps = story.steps.filter((s) => s.track === "tooltrace");
   const finalrevSteps = story.steps.filter((s) => s.track === "finalrev");
 
@@ -104,8 +118,8 @@ function FunnelStoryCard({ story }: { story: WeeklyIntelligence["funnelStory"] }
         <CardDescription>{story.narrative}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <FunnelTrackGroup title="finalREV social" steps={socialSteps} />
+        <div className={`grid gap-4 ${socialReady ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+          {socialReady && <FunnelTrackGroup title="finalREV social" steps={socialSteps} />}
           <FunnelTrackGroup title="Tooltrace site" steps={tooltraceSteps} />
           <FunnelTrackGroup title="finalREV quotes" steps={finalrevSteps} />
         </div>

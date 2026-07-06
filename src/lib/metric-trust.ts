@@ -82,13 +82,14 @@ export function shouldShowActivationRate(quality: ReportMetricQuality, funnel: F
 export function getDataTrustWarnings(
   quality: ReportMetricQuality,
   context?: DashboardPeriodContext,
-  options?: { includeGlobalConfig?: boolean },
+  options?: { includeGlobalConfig?: boolean; includeSocialPending?: boolean },
 ): string[] {
   const includeGlobal = options?.includeGlobalConfig ?? true;
+  const includeSocial = options?.includeSocialPending ?? true;
   const warnings: string[] = [];
 
-  if (!quality.hasMetricoolData) {
-    warnings.push("Social metrics need a Metricool PDF import for this period.");
+  if (includeSocial && !quality.hasMetricoolData) {
+    warnings.push("Social views and reach import with the Metricool PDF.");
   }
   if (quality.postHogConfigured && !quality.posthogSynced) {
     warnings.push("Tooltrace visitors haven't been pulled from PostHog for this period yet.");

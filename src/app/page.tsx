@@ -194,8 +194,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             intelligence={intelligence}
             postsLogged={postsLogged}
             metricQuality={metricQuality}
-            syncedAt={report?.metricool_synced_at ?? null}
-            recentPdfs={recentPdfs}
+            report={report}
           />
         ) : activeView === "period" ? (
           <>

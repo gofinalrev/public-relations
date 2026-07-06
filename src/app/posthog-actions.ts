@@ -4,7 +4,7 @@ import { isPostHogConfigured } from "@/lib/posthog/config";
 import { fetchWeeklyPostHogMetrics, fetchPostHogMetricsForPeriod } from "@/lib/posthog/metrics";
 import { analyzePostHogWeek, formatInsightsForStorage } from "@/lib/posthog/insights";
 import { getWeeklyReport, upsertPostHogSync } from "@/lib/db";
-import { getPreviousWeekKey } from "@/lib/weeks";
+import { getPreviousWeekKey, getCurrentWeekKey } from "@/lib/weeks";
 import { revalidatePath } from "next/cache";
 import { refreshGrowthInsights } from "@/app/metricool-actions";
 import { fetchFinalRevCadUploadsForPeriod, fetchFinalRevCadUploadsForWeek } from "@/lib/posthog/finalrev-metrics";
@@ -45,9 +45,11 @@ export async function syncPostHogForWeek(weekStart: string) {
 
   try {
     const existing = await getWeeklyReport(weekStart);
+    const isCurrentWeek = weekStart === getCurrentWeekKey();
     const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
     const needsRefresh = posthogNeedsRefresh(existing);
     if (
+      !isCurrentWeek &&
       existing?.posthog_synced_at &&
       !needsRefresh &&
       new Date(existing.posthog_synced_at).getTime() > tenMinutesAgo

@@ -75,16 +75,16 @@ export function getIntegrationWarnings(
   if (!status.hasPdfThisWeek) {
     warnings.push({
       id: "no-pdf",
-      level: "warning",
-      message: "No Metricool PDF for this period — social views and reach are empty until import.",
+      level: "info",
+      message: "Social views and reach fill in when the Metricool PDF is imported.",
     });
   }
 
   if (status.posthog && !status.hasPostHogThisWeek) {
     warnings.push({
       id: "no-posthog-sync",
-      level: "warning",
-      message: "Tooltrace visitors not synced for this period yet.",
+      level: "info",
+      message: "Site metrics sync on page load.",
     });
   }
 

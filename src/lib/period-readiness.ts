@@ -1,6 +1,24 @@
 import type { MetricoolPdfMeta, WeeklyReport } from "@/lib/db";
 import type { ReportMetricQuality } from "@/lib/metric-trust";
 
+export function hasSocialMetrics(args: {
+  pdfMeta: MetricoolPdfMeta | null;
+  metricQuality: ReportMetricQuality;
+  metrics: { views: number; engagement: number };
+}): boolean {
+  const { pdfMeta, metricQuality, metrics } = args;
+  return (
+    Boolean(pdfMeta) ||
+    metricQuality.hasMetricoolData ||
+    metrics.views > 0 ||
+    metrics.engagement > 0
+  );
+}
+
+export function hasLiveSiteMetrics(metricQuality: ReportMetricQuality): boolean {
+  return metricQuality.posthogSynced;
+}
+
 export function periodHasReportData(args: {
   pdfMeta: MetricoolPdfMeta | null;
   metricQuality: ReportMetricQuality;
@@ -8,15 +26,10 @@ export function periodHasReportData(args: {
   metrics: { views: number; engagement: number; visitors: number; subs: number };
 }): boolean {
   const { pdfMeta, metricQuality, postsLogged, metrics } = args;
-  if (pdfMeta) return true;
-  if (metricQuality.hasMetricoolData) return true;
+  if (hasSocialMetrics({ pdfMeta, metricQuality, metrics })) return true;
   if (postsLogged > 0) return true;
-  return (
-    metrics.views > 0 ||
-    metrics.engagement > 0 ||
-    metrics.visitors > 0 ||
-    metrics.subs > 0
-  );
+  if (hasLiveSiteMetrics(metricQuality)) return true;
+  return metrics.visitors > 0 || metrics.subs > 0;
 }
 
 export function findLatestReportedWeek(
