@@ -29,5 +29,5 @@ for k in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY APP_PUBLI
   echo "→ $k" && set_vercel "$k" "$v"
 done
 
-echo "Supabase redirect (required): https://pr.finalrev.com/auth/callback"
+echo "Supabase redirect (required): https://pr.finalrev.com"
 npx vercel deploy --prod --yes --scope finalrev

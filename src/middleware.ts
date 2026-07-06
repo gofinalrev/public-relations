@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { handleOAuthReturn } from "@/lib/auth-oauth-return";
 import { isAuthConfigured, isShopAdmin } from "@/lib/auth";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase";
 import {
@@ -13,11 +14,7 @@ function notFound(req: NextRequest) {
 }
 
 function isPublic(pathname: string) {
-  return (
-    pathname === "/auth/callback" ||
-    pathname === "/access-denied" ||
-    pathname.startsWith("/api/auth/")
-  );
+  return pathname === "/access-denied" || pathname.startsWith("/api/auth/");
 }
 
 function cronOk(req: NextRequest) {
@@ -59,6 +56,17 @@ export default async function middleware(req: NextRequest) {
 
   if (!authOn) {
     return process.env.NODE_ENV === "development" ? NextResponse.next() : notFound(req);
+  }
+
+  if (pathname === "/auth/callback") {
+    const legacy = nextUrl.clone();
+    legacy.pathname = "/";
+    return NextResponse.redirect(legacy);
+  }
+
+  if (nextUrl.searchParams.has("code")) {
+    const oauth = await handleOAuthReturn(req);
+    if (oauth) return oauth;
   }
 
   if (isPublic(pathname)) return NextResponse.next();

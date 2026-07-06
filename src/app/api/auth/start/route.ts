@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const origin = appOrigin(url.origin);
   const returnTo = url.searchParams.get("return") || "/";
-  const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(returnTo)}`;
+  const callbackUrl = `${origin}/?next=${encodeURIComponent(returnTo)}`;
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
