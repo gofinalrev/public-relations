@@ -1,17 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isShopAdmin } from "@/lib/auth";
+import { AUTH_RETURN_COOKIE, isShopAdmin, safeReturnPath } from "@/lib/auth";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase";
-
-function safeNextPath(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/";
-  return raw;
-}
 
 function redirectWithCookies(target: URL, sessionResponse: NextResponse): NextResponse {
   const redirect = NextResponse.redirect(target);
   sessionResponse.cookies.getAll().forEach(({ name, value }) => {
     redirect.cookies.set(name, value);
   });
+  redirect.cookies.delete(AUTH_RETURN_COOKIE);
   return redirect;
 }
 
@@ -35,8 +31,8 @@ export async function handleOAuthReturn(req: NextRequest): Promise<NextResponse 
     return redirectWithCookies(denied, client.response);
   }
 
-  return redirectWithCookies(
-    new URL(safeNextPath(req.nextUrl.searchParams.get("next")), req.nextUrl.origin),
-    client.response,
+  const returnPath = safeReturnPath(
+    req.cookies.get(AUTH_RETURN_COOKIE)?.value ?? req.nextUrl.searchParams.get("next"),
   );
+  return redirectWithCookies(new URL(returnPath, req.nextUrl.origin), client.response);
 }

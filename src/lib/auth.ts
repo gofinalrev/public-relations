@@ -7,8 +7,15 @@ export function isAuthConfigured(): boolean {
   return Boolean(SUPABASE_URL && SUPABASE_KEY);
 }
 
+export const AUTH_RETURN_COOKIE = "auth_return";
+
 export function appOrigin(fallback?: string): string {
   return process.env.APP_PUBLIC_URL?.trim() || fallback || "https://pr.finalrev.com";
+}
+
+export function safeReturnPath(raw: string | null | undefined): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/";
+  return raw;
 }
 
 export function isAllowedEmail(email: string | null | undefined): boolean {
