@@ -13,7 +13,11 @@ function notFound(req: NextRequest) {
 }
 
 function isPublic(pathname: string) {
-  return pathname === "/auth/callback" || pathname.startsWith("/api/auth/");
+  return (
+    pathname === "/auth/callback" ||
+    pathname === "/access-denied" ||
+    pathname.startsWith("/api/auth/")
+  );
 }
 
 function cronOk(req: NextRequest) {
@@ -65,10 +69,10 @@ export default async function middleware(req: NextRequest) {
       data: { user },
     } = await client.supabase.auth.getUser();
     if (isShopAdmin(user)) return client.response;
-    if (user) return notFound(req);
+    if (user) {
+      return NextResponse.redirect(new URL("/access-denied", nextUrl.origin));
+    }
   }
-
-  if (nextUrl.searchParams.get("fr_hub") === "0") return notFound(req);
 
   const start = new URL("/api/auth/start", nextUrl.origin);
   start.searchParams.set("return", pathname + nextUrl.search);

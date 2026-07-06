@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   });
 
   if (error || !data.url) {
-    return NextResponse.redirect(`${origin}/?fr_hub=0`, { status: 303 });
+    return NextResponse.redirect(`${origin}/access-denied`, { status: 303 });
   }
   return NextResponse.redirect(data.url);
 }

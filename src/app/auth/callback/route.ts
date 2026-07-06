@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const origin = appOrigin(url.origin);
   const nextPath = url.searchParams.get("next") || "/";
-  const fail = () => NextResponse.redirect(`${origin}/?fr_hub=0`, { status: 303 });
+  const fail = () => NextResponse.redirect(`${origin}/access-denied`, { status: 303 });
 
   const supabase = await createSupabaseServerClient();
   const code = url.searchParams.get("code");
