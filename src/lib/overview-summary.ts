@@ -126,7 +126,7 @@ function buildSummaryLines(
     );
   }
 
-  if (metrics.visitors > 0 || prev?.visitors) {
+  if (metrics.visitors > 0) {
     const visitorsDelta = periodDeltaPhrase(metrics.visitors, prev?.visitors);
     tooltraceLines.push(
       `${formatNumber(metrics.visitors)} unique visitors on tooltrace.ai${visitorsDelta ? ` (${visitorsDelta})` : ""}`,
@@ -149,8 +149,6 @@ function buildSummaryLines(
     tooltraceLines.push(
       `${metrics.subs} Pro signup events in PostHog (unverified — connect Stripe for billing truth)`,
     );
-  } else if (quality.proSubsSource === "unconfigured") {
-    tooltraceLines.push("Pro subscriptions not tracked — Stripe not connected");
   }
 
   for (const text of tooltraceLines) {

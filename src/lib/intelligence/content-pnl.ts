@@ -45,15 +45,15 @@ export function buildContentPnl(input: IntelligenceInput): ContentPnl {
   let headline: string;
   if (views > 0) {
     const socialPart = `${formatNumber(views)} @gofinalrev views${viewsDelta ? ` (${viewsDelta})` : ""}`;
-    headline = `${socialPart}. ${formatNumber(visitors)} Tooltrace visitors (separate metric).`;
+    headline = `${socialPart}. ${formatNumber(visitors)} Tooltrace visitors.`;
   } else if (visitors > 0) {
     headline = `${formatNumber(visitors)} Tooltrace visitors this period`;
   } else {
-    headline = "Import the Metricool PDF and sync PostHog to populate this summary";
+    headline = "Waiting on Metricool PDF and PostHog sync for this period";
   }
 
   if (focus === "tooltrace" || focus === "mixed") {
-    headline += " Some logged posts target Tooltrace — site traffic is still not attributed per clip.";
+    headline += " Logged posts include Tooltrace clips — site traffic is not attributed per post.";
   }
 
   return {

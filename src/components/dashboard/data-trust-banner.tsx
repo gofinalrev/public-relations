@@ -7,10 +7,16 @@ type DataTrustBannerProps = {
   quality: ReportMetricQuality;
   context?: DashboardPeriodContext;
   className?: string;
+  includeGlobalConfig?: boolean;
 };
 
-export function DataTrustBanner({ quality, context, className }: DataTrustBannerProps) {
-  const warnings = getDataTrustWarnings(quality, context);
+export function DataTrustBanner({
+  quality,
+  context,
+  className,
+  includeGlobalConfig = true,
+}: DataTrustBannerProps) {
+  const warnings = getDataTrustWarnings(quality, context, { includeGlobalConfig });
   if (warnings.length === 0) return null;
 
   return (

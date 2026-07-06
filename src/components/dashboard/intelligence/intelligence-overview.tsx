@@ -3,7 +3,6 @@
 import type { WeeklyIntelligence } from "@/lib/intelligence/types";
 import type { ReportMetricQuality } from "@/lib/metric-trust";
 import { resolveProSubsDisplay } from "@/lib/metric-trust";
-import { parallelTracksNote } from "@/lib/intelligence/content-focus";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/utils";
@@ -29,11 +28,6 @@ export function IntelligenceOverview({
       <FunnelStoryCard story={intel.funnelStory} />
       <MondayQueueCard queue={intel.mondayQueue} />
       <CompetitivePulseCard pulse={intel.competitivePulse} />
-      <Card className="border-dashed border-foreground/[0.12]">
-        <CardContent className="py-3 text-sm text-muted-foreground">
-          {parallelTracksNote("finalrev")}
-        </CardContent>
-      </Card>
       {intel.playbook.length > 0 && <PlaybookCard entries={intel.playbook} />}
     </div>
   );

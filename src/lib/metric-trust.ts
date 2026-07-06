@@ -81,7 +81,9 @@ export function shouldShowActivationRate(quality: ReportMetricQuality, funnel: F
 export function getDataTrustWarnings(
   quality: ReportMetricQuality,
   context?: DashboardPeriodContext,
+  options?: { includeGlobalConfig?: boolean },
 ): string[] {
+  const includeGlobal = options?.includeGlobalConfig ?? true;
   const warnings: string[] = [];
 
   if (!quality.hasMetricoolData) {
@@ -90,10 +92,10 @@ export function getDataTrustWarnings(
   if (quality.postHogConfigured && !quality.hasPostHogData) {
     warnings.push("Tooltrace visitor count not synced for this period yet.");
   }
-  if (!quality.postHogConfigured) {
+  if (includeGlobal && !quality.postHogConfigured) {
     warnings.push("PostHog not configured — site metrics will be empty.");
   }
-  if (quality.proSubsSource === "unconfigured") {
+  if (includeGlobal && quality.proSubsSource === "unconfigured") {
     warnings.push("Pro subscriptions are not billing-verified. Connect Stripe before trusting sub counts.");
   } else if (quality.proSubsSource === "posthog") {
     warnings.push("Pro subs come from PostHog events, not Stripe billing. Treat as directional only.");
