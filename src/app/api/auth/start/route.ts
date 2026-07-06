@@ -1,24 +1,27 @@
 import { NextResponse } from "next/server";
 import { AUTH_RETURN_COOKIE, appOrigin, safeReturnPath } from "@/lib/auth";
-import { createSupabaseServerClient } from "@/lib/supabase";
+import { createSupabaseRouteHandlerClient } from "@/lib/supabase";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const origin = appOrigin(url.origin);
   const returnTo = safeReturnPath(url.searchParams.get("return"));
 
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
+  const client = await createSupabaseRouteHandlerClient();
+  if (!client) {
+    return NextResponse.redirect(`${origin}/access-denied`, { status: 303 });
+  }
+
+  const { data, error } = await client.supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      // Exact URL — must match Supabase redirect allowlist (no query string).
       redirectTo: origin,
       queryParams: { hd: "finalrev.com", prompt: "select_account" },
     },
   });
 
   if (error || !data.url) {
-    return NextResponse.redirect(`${origin}/access-denied`, { status: 303 });
+    return client.applyCookies(NextResponse.redirect(`${origin}/access-denied`, { status: 303 }));
   }
 
   const response = NextResponse.redirect(data.url);
@@ -29,5 +32,5 @@ export async function GET(request: Request) {
     maxAge: 600,
     path: "/",
   });
-  return response;
+  return client.applyCookies(response);
 }

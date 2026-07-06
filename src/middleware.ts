@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { handleOAuthReturn } from "@/lib/auth-oauth-return";
 import { isAuthConfigured, isShopAdmin } from "@/lib/auth";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase";
 import {
@@ -60,13 +59,14 @@ export default async function middleware(req: NextRequest) {
 
   if (pathname === "/auth/callback") {
     const legacy = nextUrl.clone();
-    legacy.pathname = "/";
+    legacy.pathname = "/api/auth/callback";
     return NextResponse.redirect(legacy);
   }
 
-  if (nextUrl.searchParams.has("code")) {
-    const oauth = await handleOAuthReturn(req);
-    if (oauth) return oauth;
+  if (nextUrl.searchParams.has("code") && pathname !== "/api/auth/callback") {
+    const callback = new URL("/api/auth/callback", nextUrl.origin);
+    nextUrl.searchParams.forEach((value, key) => callback.searchParams.set(key, value));
+    return NextResponse.redirect(callback);
   }
 
   if (isPublic(pathname)) return NextResponse.next();
