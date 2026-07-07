@@ -1,6 +1,7 @@
 import { isAuthConfigured } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { EmailSignInForm } from "@/components/auth/email-sign-in-form";
 import { OAuthRecovery } from "@/components/auth/oauth-recovery";
 import { FinalrevLogo } from "@/components/dashboard/logo";
 import { notFound, redirect } from "next/navigation";
@@ -34,8 +35,27 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <div className="flex justify-center">
           <FinalrevLogo />
         </div>
-        <GoogleSignInButton returnTo={returnTo} />
-        <OAuthRecovery />
+
+        <EmailSignInForm returnTo={returnTo} />
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center" aria-hidden>
+            <div className="w-full border-t border-foreground/10" />
+          </div>
+          <p className="relative mx-auto w-fit bg-background px-3 text-xs text-muted-foreground">or</p>
+        </div>
+
+        <details className="group text-left">
+          <summary className="cursor-pointer list-none text-center text-xs text-muted-foreground marker:content-none [&::-webkit-details-marker]:hidden">
+            <span className="underline-offset-2 group-open:underline hover:text-foreground">
+              Sign in with Google
+            </span>
+          </summary>
+          <div className="mt-3 space-y-3">
+            <GoogleSignInButton returnTo={returnTo} />
+            <OAuthRecovery />
+          </div>
+        </details>
       </div>
     </main>
   );

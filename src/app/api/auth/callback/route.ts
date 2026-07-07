@@ -12,8 +12,17 @@ export async function GET(request: Request) {
   if (!client) return fail();
 
   const code = url.searchParams.get("code");
+  const tokenHash = url.searchParams.get("token_hash");
+  const otpType = url.searchParams.get("type");
+
   if (code) {
     const { error } = await client.supabase.auth.exchangeCodeForSession(code);
+    if (error) return client.applyCookies(fail());
+  } else if (tokenHash && otpType) {
+    const { error } = await client.supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: otpType as "magiclink" | "email" | "signup" | "recovery" | "invite",
+    });
     if (error) return client.applyCookies(fail());
   }
 
