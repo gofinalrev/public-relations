@@ -1,6 +1,7 @@
 import { isAuthConfigured } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { OAuthRecovery } from "@/components/auth/oauth-recovery";
 import { FinalrevLogo } from "@/components/dashboard/logo";
 import { notFound, redirect } from "next/navigation";
 
@@ -30,9 +31,11 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   return (
     <main className="safe-top safe-bottom flex min-h-dvh flex-col items-center justify-center bg-background px-4 sm:px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
-        <FinalrevLogo />
-        <p className="text-sm text-muted-foreground">Shop admin access · @finalrev.com</p>
+        <div className="flex justify-center">
+          <FinalrevLogo />
+        </div>
         <GoogleSignInButton returnTo={returnTo} />
+        <OAuthRecovery />
       </div>
     </main>
   );

@@ -13,10 +13,9 @@ export default function AccessDeniedPage() {
     <main className="safe-top safe-bottom flex min-h-dvh items-center justify-center bg-background px-4 sm:px-6">
       <div className="max-w-md text-center">
         <p className="text-sm font-medium uppercase tracking-wider text-muted-foreground">finalREV PR</p>
-        <h1 className="mt-2 text-2xl font-semibold">Shop admin access only</h1>
+        <h1 className="mt-2 text-2xl font-semibold">Access restricted</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          Sign in with a <span className="font-medium text-foreground">@finalrev.com</span> Google account
-          that has shop admin access.
+          This account doesn&apos;t have access to the PR dashboard.
         </p>
         {authOn && (
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">

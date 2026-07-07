@@ -3,6 +3,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { AUTH_RETURN_COOKIE } from "@/lib/auth";
 import { PR_HUB_ORIGIN } from "@/lib/app-origin";
+import { markOAuthPending } from "@/components/auth/oauth-recovery";
 
 function supabaseBrowser() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -25,6 +26,7 @@ type GoogleSignInButtonProps = {
 
 export function GoogleSignInButton({ returnTo = "/" }: GoogleSignInButtonProps) {
   async function signIn() {
+    markOAuthPending();
     document.cookie = `${AUTH_RETURN_COOKIE}=${encodeURIComponent(returnTo)}; Path=/; Max-Age=600; SameSite=Lax; Secure`;
 
     const supabase = supabaseBrowser();
