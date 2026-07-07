@@ -32,6 +32,21 @@ export function periodHasReportData(args: {
   return metrics.visitors > 0 || metrics.subs > 0;
 }
 
+export function metricHasPeriodValue(value: number, ready: boolean): boolean {
+  return ready && value > 0;
+}
+
+export function hasFunnelDisplayData(report: WeeklyReport | null): boolean {
+  if (!report?.posthog_funnel_json) return false;
+  if (report.posthog_insights?.trim()) return true;
+  try {
+    const data = JSON.parse(report.posthog_funnel_json) as { topReferrers?: unknown[] };
+    return (data.topReferrers?.length ?? 0) > 0;
+  } catch {
+    return false;
+  }
+}
+
 export function findLatestReportedWeek(
   history: WeeklyReport[],
   currentWeekKey: string,

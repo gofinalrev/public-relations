@@ -3,6 +3,7 @@ import type { WeeklyReport } from "@/lib/db";
 import { formatNumber } from "@/lib/utils";
 import { isStripeSubsUnconfigured, logOps } from "@/lib/ops-log";
 import { canAttributeSocialToTooltrace, resolveContentFocus } from "@/lib/intelligence/content-focus";
+import { cleanReferrerDomain } from "@/lib/learning-display";
 import { parsePostHighlights } from "@/lib/post-highlights";
 
 export type PostHogInsight = {
@@ -198,7 +199,7 @@ function buildSuggestedLearning(
 
   if (topReferrer && uniqueVisitors > 20) {
     lines.push(
-      `Tooltrace · Top referrer to tooltrace.ai: ${topReferrer.replace(/^www\./i, "").toLowerCase()}`,
+      `Top traffic source: ${cleanReferrerDomain(topReferrer)}`,
     );
   }
 
@@ -208,15 +209,15 @@ function buildSuggestedLearning(
       previous && Math.abs(visitorChange) >= 10
         ? ` (${visitorChange > 0 ? "up" : "down"} ${Math.abs(visitorChange)} vs last period)`
         : "";
-    lines.push(`Tooltrace · ${formatNumber(uniqueVisitors)} visitors on tooltrace.ai${delta}`);
+    lines.push(`${formatNumber(uniqueVisitors)} site visitors${delta}`);
   }
 
   if (newSubscriptions > 0 && conversionRate !== null) {
     lines.push(
-      `Tooltrace · ${newSubscriptions} new Pro sub${newSubscriptions === 1 ? "" : "s"} (${conversionRate.toFixed(1)}% visitor→Pro)`,
+      `${newSubscriptions} new Pro sub${newSubscriptions === 1 ? "" : "s"} (${conversionRate.toFixed(1)}% conversion)`,
     );
   } else if (uniqueVisitors > 0 && newSubscriptions === 0) {
-    lines.push("Tooltrace · 0 new Pro subs this period");
+    lines.push("No new Pro subs this period");
   }
 
   return lines.join("\n");

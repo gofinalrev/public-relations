@@ -13,9 +13,9 @@ type DashboardViewTabsProps = {
 };
 
 const TABS: { id: DashboardView; label: string; shortLabel: string; icon: typeof LayoutDashboard }[] = [
-  { id: "overview", label: "Overview", shortLabel: "Overview", icon: LayoutDashboard },
-  { id: "period", label: "Period", shortLabel: "Period", icon: CalendarDays },
-  { id: "trends", label: "Trends", shortLabel: "Trends", icon: LineChart },
+  { id: "overview", label: "Summary", shortLabel: "Summary", icon: LayoutDashboard },
+  { id: "period", label: "This week", shortLabel: "Week", icon: CalendarDays },
+  { id: "trends", label: "History", shortLabel: "History", icon: LineChart },
   { id: "toolkit", label: "Toolkit", shortLabel: "Tools", icon: Briefcase },
 ];
 

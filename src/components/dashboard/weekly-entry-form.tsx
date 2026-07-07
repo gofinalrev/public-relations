@@ -84,8 +84,8 @@ export function WeeklyEntryForm({ weekStart, report, autoSynced }: WeeklyEntryFo
           <CardTitle>Reflection</CardTitle>
           <CardDescription>
             {autoSynced
-              ? "Metrics sync from PDF + PostHog. Save what you learned."
-              : "Import PDF and sync PostHog first, then save notes."}
+              ? "Metrics sync automatically. Save what you learned this week."
+              : "Import your social report first, then save your notes."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

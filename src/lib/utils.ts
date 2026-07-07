@@ -13,6 +13,7 @@ export function formatNumber(n: number): string {
 
 export function formatDelta(current: number, previous: number | null): { value: string; positive: boolean | null } {
   if (previous === null || previous === 0) return { value: "—", positive: null };
+  if (current === 0) return { value: "—", positive: null };
   const pct = ((current - previous) / previous) * 100;
   const positive = pct >= 0;
   return { value: `${positive ? "+" : ""}${pct.toFixed(0)}%`, positive };

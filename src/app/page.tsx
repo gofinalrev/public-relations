@@ -50,6 +50,12 @@ import type { ActionItem } from "@/lib/action-items";
 import { WeeklyChecklist } from "@/components/dashboard/weekly-checklist";
 import { parsePostHighlights } from "@/lib/post-highlights";
 import { Play, MousePointerClick, Users, Crown } from "lucide-react";
+import {
+  hasFunnelDisplayData,
+  hasLiveSiteMetrics,
+  hasSocialMetrics,
+  metricHasPeriodValue,
+} from "@/lib/period-readiness";
 
 export const metadata: Metadata = {
   title: "finalREV · PR Dashboard",
@@ -150,6 +156,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const authEnabled = isAuthConfigured();
   const postsLogged = parsePostHighlights(report?.post_highlights_json).length;
   const soulOverrides = await loadSoulOverrides();
+  const socialReady = hasSocialMetrics({ pdfMeta, metricQuality, metrics });
+  const siteLive = hasLiveSiteMetrics(metricQuality);
+  const showFunnelSection = hasFunnelDisplayData(report);
 
   return (
     <>
@@ -225,57 +234,85 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
                 <MetricCard
                   label="Video views"
-                  sublabel="Metricool · social"
+                  sublabel={socialReady ? "Social · this period" : "Awaiting import"}
                   value={metrics.views}
-                  previous={periodContext.showWeekOverWeek ? (prev?.views ?? null) : null}
+                  displayValue={socialReady ? undefined : "—"}
+                  unavailable={!socialReady}
+                  hideDelta={!metricHasPeriodValue(metrics.views, socialReady)}
+                  previous={
+                    periodContext.showWeekOverWeek && socialReady ? (prev?.views ?? null) : null
+                  }
                   comparisonLabel={periodContext.comparisonLabel}
                   icon={Play}
                   variant="compact"
-                  historicalContext={historicalContext(
-                    analytics.trailing4Avg.views,
-                    analytics.trailing12Sum.views,
-                  )}
+                  historicalContext={
+                    socialReady
+                      ? historicalContext(analytics.trailing4Avg.views, analytics.trailing12Sum.views)
+                      : undefined
+                  }
                 />
                 <MetricCard
                   label="Reach + clicks"
-                  sublabel="Metricool · social"
+                  sublabel={socialReady ? "Social · this period" : "Awaiting import"}
                   value={metrics.engagement}
-                  previous={periodContext.showWeekOverWeek ? (prev?.engagement ?? null) : null}
+                  displayValue={socialReady ? undefined : "—"}
+                  unavailable={!socialReady}
+                  hideDelta={!metricHasPeriodValue(metrics.engagement, socialReady)}
+                  previous={
+                    periodContext.showWeekOverWeek && socialReady ? (prev?.engagement ?? null) : null
+                  }
                   comparisonLabel={periodContext.comparisonLabel}
                   icon={MousePointerClick}
                   variant="compact"
-                  historicalContext={historicalContext(
-                    analytics.trailing4Avg.engagement,
-                    analytics.trailing12Sum.engagement,
-                  )}
+                  historicalContext={
+                    socialReady
+                      ? historicalContext(
+                          analytics.trailing4Avg.engagement,
+                          analytics.trailing12Sum.engagement,
+                        )
+                      : undefined
+                  }
                 />
                 <MetricCard
                   label="Tooltrace visitors"
-                  sublabel="PostHog · unique"
+                  sublabel={siteLive ? "Site · unique visitors" : "Syncing…"}
                   value={metrics.visitors}
-                  previous={periodContext.showWeekOverWeek ? (prev?.visitors ?? null) : null}
+                  displayValue={siteLive ? undefined : "—"}
+                  unavailable={!siteLive}
+                  hideDelta={!metricHasPeriodValue(metrics.visitors, siteLive)}
+                  previous={
+                    periodContext.showWeekOverWeek && siteLive ? (prev?.visitors ?? null) : null
+                  }
                   comparisonLabel={periodContext.comparisonLabel}
                   icon={Users}
                   variant="compact"
-                  historicalContext={historicalContext(
-                    analytics.trailing4Avg.visitors,
-                    analytics.trailing12Sum.visitors,
-                  )}
+                  historicalContext={
+                    siteLive
+                      ? historicalContext(
+                          analytics.trailing4Avg.visitors,
+                          analytics.trailing12Sum.visitors,
+                        )
+                      : undefined
+                  }
                 />
                 <MetricCard
                   label="Pro subscriptions"
                   sublabel={proSubsDisplay.sublabel}
                   value={metrics.subs}
                   displayValue={proSubsDisplay.displayValue}
-                  hideDelta={!proSubsDisplay.showDelta}
+                  hideDelta={!proSubsDisplay.showDelta || !metricHasPeriodValue(metrics.subs, !proSubsDisplay.unavailable)}
                   unavailable={proSubsDisplay.unavailable}
-                  previous={periodContext.showWeekOverWeek && proSubsDisplay.showDelta ? (prev?.subs ?? null) : null}
+                  previous={
+                    periodContext.showWeekOverWeek && proSubsDisplay.showDelta
+                      ? (prev?.subs ?? null)
+                      : null
+                  }
                   highlight={!proSubsDisplay.unavailable}
                   comparisonLabel={periodContext.comparisonLabel}
                   icon={Crown}
                   variant="compact"
                   historicalContext={
-                    proSubsDisplay.showDelta
+                    proSubsDisplay.showDelta && metricHasPeriodValue(metrics.subs, !proSubsDisplay.unavailable)
                       ? historicalContext(analytics.trailing4Avg.subs, analytics.trailing12Sum.subs)
                       : undefined
                   }
@@ -309,16 +346,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               <ChannelGoals channels={channels} report={report} periodContext={periodContext} />
             </section>
 
-            <section>
-              <SectionHeader title="Tooltrace funnel" />
-              <div className="grid gap-4 lg:grid-cols-2">
-                <PostHogInsightsPanel report={report} />
-                <ReferrerBreakdown report={report} />
-              </div>
-            </section>
+            {showFunnelSection && (
+              <section>
+                <SectionHeader title="Site funnel" />
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <PostHogInsightsPanel report={report} />
+                  <ReferrerBreakdown report={report} />
+                </div>
+              </section>
+            )}
 
             <section>
-              <SectionHeader title="Notes" description="Learnings saved with this period" />
+              <SectionHeader title="Reflection" description="Notes saved with this week" />
               <WeeklyEntryForm weekStart={weekStart} report={report} autoSynced={Boolean(report?.metricool_synced_at)} />
             </section>
           </>

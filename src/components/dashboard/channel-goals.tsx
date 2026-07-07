@@ -265,7 +265,7 @@ function ChannelGoalCard({
 
       {!isMilestone && !resolved.hasPeriodData && (
         <p className="mt-3 text-[11px] text-amber-700 dark:text-amber-400">
-          No data yet for this period. Import a Metricool PDF in Details.
+          No data for this period yet. Import a report on the This week tab.
         </p>
       )}
 
@@ -335,10 +335,6 @@ function ChannelGoalCard({
             <p className="text-[11px] font-medium text-destructive">{saveError}</p>
           )}
         </div>
-      )}
-
-      {channel.notes && (
-        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{channel.notes}</p>
       )}
     </form>
   );

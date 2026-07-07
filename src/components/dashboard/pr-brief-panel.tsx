@@ -35,7 +35,7 @@ export function PrBriefPanel({ context, report, previousWeek, history }: PrBrief
   return (
     <Card className="h-full border-foreground/[0.08]">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium">Highlight</CardTitle>
+        <CardTitle className="text-base font-medium">Key insight</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         {topInsight && (

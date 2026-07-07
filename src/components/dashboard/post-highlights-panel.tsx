@@ -81,7 +81,7 @@ export function PostHighlightsPanel({ weekStart, postHighlightsJson, compact, au
         </CardTitle>
         {!compact && (
           <CardDescription>
-            Manual entry from YouTube Studio / IG Insights. Tag product: finalREV (default) or Tooltrace when clips target that brand.
+            Log top posts from YouTube Studio or Instagram Insights. Tag finalREV (default) or Tooltrace when relevant.
           </CardDescription>
         )}
       </CardHeader>

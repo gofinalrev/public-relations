@@ -49,7 +49,7 @@ export function resolveProSubsDisplay(subs: number, quality: ReportMetricQuality
   if (quality.proSubsSource === "posthog" && subs > 0) {
     return {
       displayValue: formatNumber(subs),
-      sublabel: "Tooltrace Pro · PostHog events (unverified)",
+      sublabel: "Tooltrace Pro · estimated",
       unavailable: false,
       showDelta: true,
     };
@@ -57,7 +57,7 @@ export function resolveProSubsDisplay(subs: number, quality: ReportMetricQuality
   if (quality.proSubsSource === "unconfigured") {
     return {
       displayValue: "—",
-      sublabel: subs > 0 ? `${formatNumber(subs)} unverified` : "Not in Stripe",
+      sublabel: subs > 0 ? `${formatNumber(subs)} unverified` : "Awaiting billing data",
       unavailable: true,
       showDelta: false,
     };

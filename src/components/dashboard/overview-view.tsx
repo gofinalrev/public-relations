@@ -16,6 +16,7 @@ import { PostHighlightsPanel } from "@/components/dashboard/post-highlights-pane
 import { PostHogInsightsPanel } from "@/components/dashboard/posthog-insights-panel";
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { OverviewSummaryCard } from "@/components/dashboard/overview-summary-card";
 import { parsePostHighlights } from "@/lib/post-highlights";
 import {
@@ -29,15 +30,15 @@ import {
   Upload,
 } from "lucide-react";
 
-function syncedSublabel(source: string, syncedAt: string | null | undefined): string {
-  if (!syncedAt) return source;
+function syncedSublabel(label: string, syncedAt: string | null | undefined): string {
+  if (!syncedAt) return label;
   const when = new Date(syncedAt).toLocaleString(undefined, {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
   });
-  return `${source} · ${when}`;
+  return `${label} · updated ${when}`;
 }
 
 export function OverviewView({
@@ -102,24 +103,30 @@ export function OverviewView({
       </div>
 
       {!showOverview ? (
-        <p className="text-sm text-muted-foreground">
-          Site metrics load automatically. Import social data on the{" "}
-          <Link href={periodLink} className="text-foreground underline-offset-4 hover:underline">
-            Period
-          </Link>{" "}
-          tab.
-          {lastReportedWeek && (
-            <>
-              {" · "}
-              <Link
-                href={`/?week=${lastReportedWeek.week_start}`}
-                className="text-foreground underline-offset-4 hover:underline"
-              >
-                {formatWeekLabel(parseWeekKey(lastReportedWeek.week_start))}
-              </Link>
-            </>
-          )}
-        </p>
+        <Card className="border-dashed border-foreground/10 bg-muted/20">
+          <CardContent className="flex flex-col items-center px-4 py-8 text-center sm:px-6 sm:py-10">
+            <Upload className="size-8 text-muted-foreground" aria-hidden />
+            <h2 className="mt-3 text-base font-semibold sm:text-lg">No data for this week yet</h2>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              Site metrics sync automatically. Import your social report on the This week tab to fill in views and
+              reach.
+            </p>
+            <Button className="mt-4 w-full sm:w-auto" size="sm" asChild>
+              <Link href={periodLink}>Go to This week</Link>
+            </Button>
+            {lastReportedWeek && (
+              <p className="mt-4 text-xs text-muted-foreground">
+                Last reported:{" "}
+                <Link
+                  href={`/?week=${lastReportedWeek.week_start}`}
+                  className="text-foreground underline-offset-4 hover:underline"
+                >
+                  {formatWeekLabel(parseWeekKey(lastReportedWeek.week_start))}
+                </Link>
+              </p>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         <>
           {(summary.summaryLines.length > 0 || summary.teamNote) && (
@@ -155,7 +162,7 @@ export function OverviewView({
               />
               <MetricCard
                 label="Tooltrace visitors"
-                sublabel={syncedSublabel("PostHog", report?.posthog_synced_at)}
+                sublabel={syncedSublabel("Site metrics", report?.posthog_synced_at)}
                 value={metrics.visitors}
                 displayValue={siteLive ? undefined : "—"}
                 unavailable={!siteLive}
@@ -180,7 +187,7 @@ export function OverviewView({
               />
               <MetricCard
                 label="STEP uploads"
-                sublabel={syncedSublabel("PostHog", report?.posthog_synced_at)}
+                sublabel={syncedSublabel("Site metrics", report?.posthog_synced_at)}
                 value={cadUploads}
                 displayValue={siteLive ? undefined : "—"}
                 unavailable={!siteLive}
@@ -206,7 +213,7 @@ export function OverviewView({
       <div className="flex justify-center border-t border-foreground/[0.06] pt-5">
         <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
           <Link href={periodLink}>
-            Period details
+            Open this week
             <ArrowRight className="size-3.5" />
           </Link>
         </Button>
