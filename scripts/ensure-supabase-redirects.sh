@@ -6,11 +6,11 @@ REF="${SUPABASE_PROJECT_REF:-zjkmxaqpybvbondulalx}"
 FINALREV_ROOT="$(cd "$(dirname "$0")/../../finalrev" 2>/dev/null && pwd || true)"
 
 echo "Production Supabase must allow OAuth return to:"
-echo "  https://pr.finalrev.com/auth/callback"
+echo "  https://pr.finalrev.com"
 echo ""
 echo "Option A — Dashboard (anyone with Supabase access):"
 echo "  Authentication → URL Configuration → Redirect URLs → Add URL"
-echo "  https://pr.finalrev.com/auth/callback"
+echo "  https://pr.finalrev.com"
 echo ""
 echo "Option B — CLI from finalrev repo (applies supabase/config.toml):"
 if [[ -n "$FINALREV_ROOT" && -f "$FINALREV_ROOT/supabase/config.toml" ]]; then

@@ -69,9 +69,9 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/access-denied", nextUrl.origin));
   }
 
-  if (nextUrl.searchParams.has("code") && pathname !== "/auth/callback" && pathname !== "/api/auth/callback") {
+  if (nextUrl.searchParams.has("code") && pathname !== "/api/auth/callback") {
     const callback = nextUrl.clone();
-    callback.pathname = "/auth/callback";
+    callback.pathname = "/api/auth/callback";
     return NextResponse.rewrite(callback);
   }
 

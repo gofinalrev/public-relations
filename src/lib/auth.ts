@@ -11,7 +11,7 @@ export function isAuthConfigured(): boolean {
 
 export const AUTH_RETURN_COOKIE = "auth_return";
 
-/** OAuth return URL — must match Supabase redirect allowlist (https://pr.finalrev.com/auth/callback). */
+/** OAuth return URL — must match Supabase redirect allowlist (https://pr.finalrev.com). */
 export function appOrigin(fallback?: string): string {
   return resolveAppOrigin(fallback);
 }

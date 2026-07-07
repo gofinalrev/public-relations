@@ -2,10 +2,9 @@ export const PR_HUB_ORIGIN = "https://pr.finalrev.com";
 
 const PR_HUB_DEFAULT = PR_HUB_ORIGIN;
 
-/** Supabase OAuth redirect — must match allowlist (https://pr.finalrev.com/auth/callback). */
+/** Supabase OAuth redirect — must match allowlist exactly: https://pr.finalrev.com */
 export function oauthRedirectUrl(requestOrigin?: string): string {
-  const origin = appOrigin(requestOrigin).replace(/\/$/, "");
-  return `${origin}/auth/callback`;
+  return appOrigin(requestOrigin).replace(/\/$/, "");
 }
 
 function normalizeOrigin(value: string | undefined): string | undefined {
