@@ -13,7 +13,7 @@ function notFound(req: NextRequest) {
 }
 
 function isPublic(pathname: string) {
-  return pathname === "/sign-in" || pathname === "/access-denied" || pathname.startsWith("/api/auth/");
+  return pathname === "/access-denied" || pathname.startsWith("/api/auth/");
 }
 
 function cronOk(req: NextRequest) {
@@ -36,6 +36,14 @@ async function refreshAuthSession(req: NextRequest) {
     data: { user },
   } = await client.supabase.auth.getUser();
   return { user, client };
+}
+
+function homeWithReturn(req: NextRequest, returnPath: string) {
+  const home = new URL("/", req.nextUrl.origin);
+  if (returnPath.startsWith("/") && returnPath !== "/") {
+    home.searchParams.set("return", returnPath);
+  }
+  return home;
 }
 
 export default async function middleware(req: NextRequest) {
@@ -79,11 +87,16 @@ export default async function middleware(req: NextRequest) {
     return client?.response ?? NextResponse.next();
   }
 
+  if (pathname === "/sign-in") {
+    const home = homeWithReturn(req, nextUrl.searchParams.get("return") ?? "/");
+    nextUrl.searchParams.forEach((value, key) => {
+      if (key !== "return") home.searchParams.set(key, value);
+    });
+    const redirect = NextResponse.redirect(home);
+    return client?.withResponse(redirect) ?? redirect;
+  }
+
   if (isPublic(pathname)) {
-    if (pathname === "/sign-in" && isShopAdmin(user)) {
-      const redirect = NextResponse.redirect(new URL("/", nextUrl.origin));
-      return client?.withResponse(redirect) ?? redirect;
-    }
     return client?.response ?? NextResponse.next();
   }
 
@@ -96,9 +109,12 @@ export default async function middleware(req: NextRequest) {
     return client?.withResponse(redirect) ?? redirect;
   }
 
-  const signIn = new URL("/sign-in", nextUrl.origin);
-  signIn.searchParams.set("return", pathname + nextUrl.search);
-  const redirect = NextResponse.redirect(signIn);
+  // Unauthenticated — always land on the site root (inline sign-in).
+  if (pathname === "/") {
+    return client?.response ?? NextResponse.next();
+  }
+
+  const redirect = NextResponse.redirect(homeWithReturn(req, pathname + nextUrl.search));
   return client?.withResponse(redirect) ?? redirect;
 }
 

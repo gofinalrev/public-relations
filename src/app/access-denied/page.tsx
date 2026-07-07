@@ -20,7 +20,7 @@ export default function AccessDeniedPage() {
         {authOn && (
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Link
-              href="/sign-in"
+              href="/"
               className="inline-flex h-10 items-center justify-center bg-primary px-5 text-sm font-medium text-primary-foreground"
             >
               Try another account

@@ -30,7 +30,9 @@ import { TeamShareLink } from "@/components/dashboard/team-share-link";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SectionHeader } from "@/components/dashboard/section-header";
-import { isAuthConfigured } from "@/lib/auth";
+import { isAuthConfigured, isShopAdmin } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase";
+import { buildAuthReturnPath, SignInPanel } from "@/components/auth/sign-in-panel";
 import { isPostHogConfigured } from "@/lib/posthog/config";
 import { getIntegrationStatus, getIntegrationWarnings, getIntegrationOpsNotes } from "@/lib/integrations";
 import { OpsLogSink } from "@/components/dashboard/ops-log-sink";
@@ -63,7 +65,7 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  searchParams: Promise<{ week?: string; view?: string }>;
+  searchParams: Promise<{ week?: string; view?: string; return?: string }>;
 };
 
 function historicalContext(avg4: number, sum12: number): string {
@@ -72,6 +74,17 @@ function historicalContext(avg4: number, sum12: number): string {
 
 export default async function DashboardPage({ searchParams }: PageProps) {
   const params = await searchParams;
+
+  if (isAuthConfigured()) {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!isShopAdmin(user)) {
+      return <SignInPanel returnTo={buildAuthReturnPath(params)} />;
+    }
+  }
+
   const weekStart = params.week ?? getCurrentWeekKey();
   const activeView =
     params.view === "period"
