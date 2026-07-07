@@ -57,12 +57,6 @@ export default async function middleware(req: NextRequest) {
     return process.env.NODE_ENV === "development" ? NextResponse.next() : notFound(req);
   }
 
-  if (pathname === "/auth/callback") {
-    const legacy = nextUrl.clone();
-    legacy.pathname = "/api/auth/callback";
-    return NextResponse.redirect(legacy);
-  }
-
   if (
     nextUrl.searchParams.has("error") &&
     pathname !== "/access-denied" &&
@@ -72,9 +66,9 @@ export default async function middleware(req: NextRequest) {
   }
 
   if (nextUrl.searchParams.has("code") && pathname !== "/api/auth/callback") {
-    const callback = new URL("/api/auth/callback", nextUrl.origin);
-    nextUrl.searchParams.forEach((value, key) => callback.searchParams.set(key, value));
-    return NextResponse.redirect(callback);
+    const callback = nextUrl.clone();
+    callback.pathname = "/api/auth/callback";
+    return NextResponse.rewrite(callback);
   }
 
   if (isPublic(pathname)) return NextResponse.next();

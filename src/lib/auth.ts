@@ -1,4 +1,4 @@
-import { appOrigin as resolveAppOrigin, isPrHubOrigin } from "@/lib/app-origin";
+import { appOrigin as resolveAppOrigin, isPrHubOrigin, oauthRedirectUrl } from "@/lib/app-origin";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const SUPABASE_KEY =
@@ -15,6 +15,8 @@ export const AUTH_RETURN_COOKIE = "auth_return";
 export function appOrigin(fallback?: string): string {
   return resolveAppOrigin(fallback);
 }
+
+export { oauthRedirectUrl };
 
 export { isPrHubOrigin };
 
