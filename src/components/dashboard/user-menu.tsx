@@ -1,45 +1,35 @@
-import { auth, signOut } from "@/lib/auth";
-import { isAuthConfigured } from "@/lib/auth/allowed-email";
+import { isAuthConfigured, isShopAdmin } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 
 export async function UserMenu() {
   if (!isAuthConfigured()) return null;
 
-  const session = await auth();
-  if (!session?.user || !session.shopAdmin) return null;
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!isShopAdmin(user)) return null;
 
-  const name = session.user.name?.split(" ")[0] ?? session.user.email?.split("@")[0] ?? "Team";
-  const initial = name.charAt(0).toUpperCase();
-
-  async function handleSignOut() {
-    "use server";
-    await signOut({ redirectTo: "/sign-in" });
-  }
+  const name = user!.user_metadata?.full_name?.split(" ")[0] ?? user!.email?.split("@")[0] ?? "Team";
 
   return (
-    <form action={handleSignOut} className="flex items-center gap-2">
+    <form action="/api/auth/signout" method="POST" className="flex items-center gap-2">
       <div
         className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary"
-        title={session.user.email ?? undefined}
+        title={user!.email ?? undefined}
         aria-hidden
       >
-        {initial}
+        {name.charAt(0).toUpperCase()}
       </div>
       <span
         className="hidden max-w-[5rem] truncate text-sm font-medium sm:inline md:max-w-[8rem]"
-        title={session.user.email ?? undefined}
+        title={user!.email ?? undefined}
       >
         {name}
       </span>
-      <Button
-        type="submit"
-        size="icon"
-        variant="ghost"
-        title="Sign out"
-        aria-label="Sign out"
-        className="size-9 shrink-0 text-muted-foreground hover:text-foreground"
-      >
+      <Button type="submit" size="icon" variant="ghost" title="Sign out" aria-label="Sign out" className="size-9 shrink-0 text-muted-foreground hover:text-foreground">
         <LogOut className="size-4" />
       </Button>
     </form>
