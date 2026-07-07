@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { AUTH_RETURN_COOKIE, oauthRedirectUrl, safeReturnPath } from "@/lib/auth";
+import { PR_OAUTH_BRIDGE_COOKIE, prOAuthBridgeCookieOptions } from "@/lib/auth/pr-oauth-bridge";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase";
 
 export async function GET(request: Request) {
@@ -11,10 +12,6 @@ export async function GET(request: Request) {
   if (!client) {
     return NextResponse.redirect(`${redirectTo}/access-denied`, { status: 303 });
   }
-
-  // Shared .finalrev.com Supabase cookies (from finalrev.com login) make Supabase
-  // skip OAuth and fall back to Site URL — clear session before starting a fresh flow.
-  await client.supabase.auth.signOut({ scope: "local" });
 
   const { data, error } = await client.supabase.auth.signInWithOAuth({
     provider: "google",
@@ -36,5 +33,7 @@ export async function GET(request: Request) {
     maxAge: 600,
     path: "/",
   });
+  // If Supabase falls back to finalrev.com Site URL, finalrev middleware forwards ?code= here.
+  response.cookies.set(PR_OAUTH_BRIDGE_COOKIE, "1", prOAuthBridgeCookieOptions());
   return client.applyCookies(response);
 }
