@@ -447,7 +447,7 @@ export function CaptionStudioPanel({
               className="flex min-h-[44px] items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground sm:min-h-0 sm:justify-start"
             >
               {showVoice ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-              Brand voice guide
+              soul.md
             </button>
             <button
               type="button"
