@@ -13,7 +13,7 @@
     "cron:weekly": "bash scripts/local-weekly-sync.sh",
     "deploy": "bash scripts/deploy-vercel.sh",
     "sync-env": "bash scripts/sync-vercel-env.sh",
-    "setup:google": "bash scripts/setup-auth.sh",
+    "setup:auth": "bash scripts/setup-auth.sh",
     "import-pdf": "tsx --env-file=.env.local scripts/import-metricool-pdf.ts",
     "lint": "eslint"
   },

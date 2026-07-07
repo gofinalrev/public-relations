@@ -63,6 +63,14 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.redirect(legacy);
   }
 
+  if (
+    nextUrl.searchParams.has("error") &&
+    pathname !== "/access-denied" &&
+    !pathname.startsWith("/api/auth/")
+  ) {
+    return NextResponse.redirect(new URL("/access-denied", nextUrl.origin));
+  }
+
   if (nextUrl.searchParams.has("code") && pathname !== "/api/auth/callback") {
     const callback = new URL("/api/auth/callback", nextUrl.origin);
     nextUrl.searchParams.forEach((value, key) => callback.searchParams.set(key, value));
