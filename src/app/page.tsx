@@ -44,6 +44,7 @@ import { syncPostHogForWeek } from "@/app/posthog-actions";
 import { syncMetricoolForWeek } from "@/app/metricool-actions";
 import { syncSocialChannels } from "@/app/social-sync-actions";
 import { loadOrBuildIntelligence } from "@/lib/intelligence/persist";
+import { loadSoulOverrides } from "@/lib/pr-toolkit/soul-settings";
 import { resolveTeamShareUrl, getSuggestedPinUrl } from "@/lib/team-url";
 import type { ActionItem } from "@/lib/action-items";
 import { WeeklyChecklist } from "@/components/dashboard/weekly-checklist";
@@ -148,6 +149,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const authEnabled = isAuthConfigured();
   const postsLogged = parsePostHighlights(report?.post_highlights_json).length;
+  const soulOverrides = await loadSoulOverrides();
 
   return (
     <>
@@ -330,6 +332,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               context={periodContext}
               geminiConfigured={isGeminiConfigured()}
               intelligence={intelligence}
+              soulOverrides={soulOverrides}
             />
           </>
         ) : (

@@ -6,15 +6,18 @@ import type { GeneratedPlatformCaptions } from "@/lib/gemini/caption-generator";
 import {
   generateCaptionsAction,
   saveCaptionPickAction,
+  saveSoulAction,
+  resetSoulAction,
   toggleCaptionPostedAction,
 } from "@/app/caption-actions";
 import {
   CAPTION_PLATFORMS,
-  FINALREV_SOUL,
-  TOOLTRACE_SOUL,
+  getDefaultVoiceGuide,
+  resolveVoiceGuide,
   type CaptionBrand,
   type CaptionPlatform,
 } from "@/lib/pr-toolkit/voice-guides";
+import type { SoulOverrides } from "@/lib/pr-toolkit/soul-settings";
 import {
   CONTENT_ARCHETYPE_LABELS,
   MARKET_LANDSCAPE,
@@ -54,6 +57,7 @@ type CaptionStudioPanelProps = {
   weekStart: string;
   geminiConfigured: boolean;
   initialStudioState: CaptionStudioState;
+  soulOverrides: SoulOverrides;
 };
 
 type SavedRun = {
@@ -72,6 +76,7 @@ export function CaptionStudioPanel({
   weekStart,
   geminiConfigured,
   initialStudioState,
+  soulOverrides,
 }: CaptionStudioPanelProps) {
   const [brand, setBrand] = useState<CaptionBrand>("finalrev");
   const [platforms, setPlatforms] = useState<CaptionPlatform[]>(DEFAULT_PLATFORMS);
@@ -83,6 +88,12 @@ export function CaptionStudioPanel({
   const [contentArchetype, setContentArchetype] = useState<ContentArchetype>("auto");
   const [showVoice, setShowVoice] = useState(false);
   const [showMarket, setShowMarket] = useState(false);
+  const [savedSouls, setSavedSouls] = useState<SoulOverrides>(soulOverrides);
+  const [soulDraft, setSoulDraft] = useState(() =>
+    resolveVoiceGuide("finalrev", soulOverrides.finalrev),
+  );
+  const [soulMessage, setSoulMessage] = useState<string | null>(null);
+  const [soulPending, startSoulTransition] = useTransition();
   const [generationMeta, setGenerationMeta] = useState<{
     detectedArchetype?: string;
     audience?: string;
@@ -101,6 +112,15 @@ export function CaptionStudioPanel({
   useEffect(() => {
     setStudioState(initialStudioState);
   }, [initialStudioState]);
+
+  useEffect(() => {
+    setSavedSouls(soulOverrides);
+  }, [soulOverrides]);
+
+  useEffect(() => {
+    setSoulDraft(resolveVoiceGuide(brand, savedSouls[brand]));
+    setSoulMessage(null);
+  }, [brand, savedSouls]);
 
   useEffect(() => {
     if (!geminiConfigured) {
@@ -126,6 +146,37 @@ export function CaptionStudioPanel({
       /* ignore */
     }
   }, []);
+
+  const soulIsCustom = Boolean(savedSouls[brand]);
+  const soulSavedText = resolveVoiceGuide(brand, savedSouls[brand]);
+  const soulIsDirty = soulDraft.trim() !== soulSavedText.trim();
+
+  function saveSoul() {
+    setSoulMessage(null);
+    startSoulTransition(async () => {
+      const result = await saveSoulAction(brand, soulDraft);
+      if (!result.ok) {
+        setSoulMessage(result.error);
+        return;
+      }
+      setSavedSouls((prev) => ({ ...prev, [brand]: result.override }));
+      setSoulMessage("Saved");
+    });
+  }
+
+  function resetSoul() {
+    setSoulMessage(null);
+    startSoulTransition(async () => {
+      const result = await resetSoulAction(brand);
+      if (!result.ok) {
+        setSoulMessage(result.error);
+        return;
+      }
+      setSavedSouls((prev) => ({ ...prev, [brand]: null }));
+      setSoulDraft(getDefaultVoiceGuide(brand));
+      setSoulMessage("Reset to default");
+    });
+  }
 
   function togglePlatform(id: CaptionPlatform) {
     setPlatforms((prev) =>
@@ -460,9 +511,47 @@ export function CaptionStudioPanel({
           </div>
 
           {showVoice && (
-            <pre className="max-h-64 overflow-auto border border-foreground/[0.08] bg-muted/30 p-3 text-[11px] leading-relaxed whitespace-pre-wrap text-muted-foreground">
-              {brand === "finalrev" ? FINALREV_SOUL : TOOLTRACE_SOUL}
-            </pre>
+            <div className="space-y-2 border border-foreground/[0.08] bg-muted/30 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  soul.md · {soulIsCustom ? "custom" : "default"}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={soulPending || (!soulIsCustom && !soulIsDirty)}
+                    onClick={resetSoul}
+                  >
+                    Reset
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={soulPending || !soulIsDirty}
+                    onClick={saveSoul}
+                  >
+                    {soulPending ? "Saving…" : "Save"}
+                  </Button>
+                </div>
+              </div>
+              <Textarea
+                value={soulDraft}
+                onChange={(e) => {
+                  setSoulDraft(e.target.value);
+                  setSoulMessage(null);
+                }}
+                className="min-h-48 font-mono text-xs leading-relaxed"
+                spellCheck={false}
+              />
+              {soulMessage && (
+                <p className={cn("text-xs", soulMessage.includes("Could") ? "text-destructive" : "text-primary")}>
+                  {soulMessage}
+                </p>
+              )}
+            </div>
           )}
 
           {showMarket && (

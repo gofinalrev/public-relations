@@ -35,6 +35,7 @@ export type CaptionGenerationInput = {
   appendUtm?: boolean;
   xThreadMode?: boolean;
   contentArchetype?: ContentArchetype;
+  voiceGuide: string;
 };
 
 const CLICHE_PATTERN =
@@ -149,6 +150,7 @@ export async function generateVideoCaptions(
       platforms: input.platforms,
       archetype,
       xThreadMode: Boolean(input.xThreadMode),
+      voiceGuide: input.voiceGuide,
     }),
     prompt: buildCaptionUserPrompt({
       brand: input.brand,

@@ -11,7 +11,7 @@ import {
   platformPlaybook,
 } from "@/lib/pr-toolkit/market-intelligence";
 import type { CaptionBrand, CaptionPlatform } from "@/lib/pr-toolkit/voice-guides";
-import { getVoiceGuide, platformCaptionHints } from "@/lib/pr-toolkit/voice-guides";
+import { platformCaptionHints } from "@/lib/pr-toolkit/voice-guides";
 
 export type CaptionWeekContext = {
   summary: string;
@@ -65,13 +65,14 @@ export function buildCaptionSystemPrompt(input: {
   platforms: CaptionPlatform[];
   archetype: ContentArchetype;
   xThreadMode: boolean;
+  voiceGuide: string;
 }): string {
   const platformBlock = input.platforms
     .map((p) => `- ${p}:\n  ${platformCaptionHints(p)}\n  ${platformPlaybook(p, input.brand)}`)
     .join("\n");
 
   return [
-    getVoiceGuide(input.brand),
+    input.voiceGuide,
     "",
     MARKET_LANDSCAPE,
     "",

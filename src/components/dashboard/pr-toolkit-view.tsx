@@ -14,6 +14,7 @@ import { CaptionStudioPanel } from "./pr-toolkit/caption-studio-panel";
 import { Image, Link2, MessageSquare, Lightbulb, BookOpen, PenLine, ClipboardList } from "lucide-react";
 import { IntelligenceToolkit } from "./intelligence/intelligence-toolkit";
 import type { WeeklyIntelligence } from "@/lib/intelligence/types";
+import type { SoulOverrides } from "@/lib/pr-toolkit/soul-settings";
 import { parsePostHighlights } from "@/lib/post-highlights";
 
 type PrToolkitViewProps = {
@@ -23,6 +24,7 @@ type PrToolkitViewProps = {
   context: DashboardPeriodContext;
   geminiConfigured: boolean;
   intelligence?: WeeklyIntelligence;
+  soulOverrides: SoulOverrides;
 };
 
 const SECTIONS = [
@@ -44,6 +46,7 @@ export function PrToolkitView({
   context,
   geminiConfigured,
   intelligence,
+  soulOverrides,
 }: PrToolkitViewProps) {
   const [section, setSection] = useState<SectionId>("captions");
 
@@ -77,6 +80,7 @@ export function PrToolkitView({
           weekStart={weekStart}
           geminiConfigured={geminiConfigured}
           initialStudioState={parseCaptionStudioState(report?.caption_studio_json)}
+          soulOverrides={soulOverrides}
         />
       )}
       {section === "intel" && intelligence && (

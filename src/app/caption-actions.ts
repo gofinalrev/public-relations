@@ -9,9 +9,10 @@ import { buildCaptionWeekContext } from "@/lib/gemini/caption-prompt";
 import { isGeminiConfigured } from "@/lib/gemini/config";
 import { logOps } from "@/lib/ops-log";
 import type { ContentArchetype } from "@/lib/pr-toolkit/market-intelligence";
-import type { CaptionBrand, CaptionPlatform } from "@/lib/pr-toolkit/voice-guides";
+import { getDefaultVoiceGuide, type CaptionBrand, type CaptionPlatform } from "@/lib/pr-toolkit/voice-guides";
 import { getDashboardData, getWeeklyReport, updateCaptionStudio } from "@/lib/db";
 import { buildDashboardPeriodContext } from "@/lib/period-context";
+import { getResolvedSoul, resetSoulOverride, saveSoulOverride } from "@/lib/pr-toolkit/soul-settings";
 import {
   type CaptionPick,
   type CaptionStudioState,
@@ -64,6 +65,7 @@ export async function generateCaptionsAction(
   }
 
   try {
+    const voiceGuide = await getResolvedSoul(input.brand);
     const result = await generateVideoCaptions({
       brand: input.brand,
       platforms: input.platforms,
@@ -74,6 +76,7 @@ export async function generateCaptionsAction(
       weekContext,
       xThreadMode: input.xThreadMode,
       contentArchetype: input.contentArchetype ?? "auto",
+      voiceGuide,
     });
     return {
       ok: true,
@@ -115,4 +118,31 @@ export async function toggleCaptionPostedAction(
   const next: CaptionStudioState = { ...state, posted: [...postedSet] };
   await persistCaptionState(weekStart, next);
   return { ok: true, state: next };
+}
+
+export async function saveSoulAction(
+  brand: CaptionBrand,
+  text: string,
+): Promise<{ ok: true; override: string | null } | { ok: false; error: string }> {
+  try {
+    await saveSoulOverride(brand, text);
+    revalidatePath("/");
+    const trimmed = text.trim();
+    const override = trimmed && trimmed !== getDefaultVoiceGuide(brand) ? trimmed : null;
+    return { ok: true, override };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Could not save soul.md" };
+  }
+}
+
+export async function resetSoulAction(
+  brand: CaptionBrand,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await resetSoulOverride(brand);
+    revalidatePath("/");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Could not reset soul.md" };
+  }
 }

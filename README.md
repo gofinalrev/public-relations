@@ -22,7 +22,7 @@ Copy `.env.example` → `.env.local`. Required for a full experience:
 | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SECRET` | Shop-admin-only access |
 | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Shared weekly data |
 | `POSTHOG_PERSONAL_API_KEY`, `POSTHOG_*` | Tooltrace + finalREV analytics |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Caption Studio |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Caption Studio (uses **soul.md** voice direction; editable in Toolkit → Captions) |
 | `RESEND_API_KEY` | Monday weekly email brief |
 
 Optional: Stripe (Pro subs), Metricool API, YouTube API, Slack webhook, `CRON_SECRET`.

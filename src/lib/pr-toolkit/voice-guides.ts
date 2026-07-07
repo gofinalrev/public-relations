@@ -67,8 +67,18 @@ export const CAPTION_PLATFORMS: Array<{ id: CaptionPlatform; label: string; char
   { id: "tiktok", label: "TikTok" },
 ];
 
-export function getVoiceGuide(brand: CaptionBrand): string {
+export function getDefaultVoiceGuide(brand: CaptionBrand): string {
   return brand === "finalrev" ? FINALREV_SOUL : TOOLTRACE_SOUL;
+}
+
+export function resolveVoiceGuide(brand: CaptionBrand, override?: string | null): string {
+  const custom = override?.trim();
+  return custom || getDefaultVoiceGuide(brand);
+}
+
+/** Default soul.md for the brand (use resolveVoiceGuide when a saved override may exist). */
+export function getVoiceGuide(brand: CaptionBrand): string {
+  return getDefaultVoiceGuide(brand);
 }
 
 export function platformCaptionHints(platform: CaptionPlatform): string {
