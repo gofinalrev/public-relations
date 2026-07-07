@@ -33,7 +33,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
     <main className="safe-top safe-bottom flex min-h-dvh flex-col items-center justify-center bg-background px-4 sm:px-6">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div className="flex justify-center">
-          <FinalrevLogo />
+          <FinalrevLogo showSubtitle={false} />
         </div>
 
         <EmailSignInForm returnTo={returnTo} />

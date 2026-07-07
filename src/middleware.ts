@@ -71,6 +71,8 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.rewrite(callback);
   }
 
+  if (pathname.startsWith("/brand/")) return NextResponse.next();
+
   if (isPublic(pathname)) return NextResponse.next();
 
   const client = createSupabaseMiddlewareClient(req);

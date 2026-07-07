@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
 type FinalrevLogoProps = {
   className?: string;
   size?: number;
+  showSubtitle?: boolean;
 };
 
-export function FinalrevLogo({ className, size = 36 }: FinalrevLogoProps) {
+export function FinalrevLogo({ className, size = 36, showSubtitle = true }: FinalrevLogoProps) {
   const iconSize = size;
 
   return (
@@ -46,9 +47,11 @@ export function FinalrevLogo({ className, size = 36 }: FinalrevLogoProps) {
         <span className="text-base font-bold tracking-tight sm:text-lg">
           final<span className="text-primary">REV</span>
         </span>
-        <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:text-[10px] sm:tracking-[0.25em]">
-          PR Dashboard
-        </p>
+        {showSubtitle && (
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:text-[10px] sm:tracking-[0.25em]">
+            PR Dashboard
+          </p>
+        )}
       </div>
     </div>
   );

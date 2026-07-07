@@ -91,7 +91,6 @@ export function EmailSignInForm({ returnTo = "/" }: EmailSignInFormProps) {
         {pending && <Loader2 className="size-4 animate-spin" />}
         {pending ? "Sending…" : "Email me a sign-in link"}
       </button>
-      <p className="text-center text-xs text-muted-foreground">No password — one tap in your inbox.</p>
     </form>
   );
 }
