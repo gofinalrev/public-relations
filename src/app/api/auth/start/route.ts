@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const origin = appOrigin(url.origin);
   const returnTo = safeReturnPath(url.searchParams.get("return"));
+  const redirectTo = `${origin}/api/auth/callback`;
 
   const client = await createSupabaseRouteHandlerClient();
   if (!client) {
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
   const { data, error } = await client.supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: origin,
+      redirectTo,
       queryParams: { hd: "finalrev.com", prompt: "select_account" },
     },
   });

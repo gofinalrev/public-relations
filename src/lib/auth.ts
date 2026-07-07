@@ -9,8 +9,35 @@ export function isAuthConfigured(): boolean {
 
 export const AUTH_RETURN_COOKIE = "auth_return";
 
-export function appOrigin(fallback?: string): string {
-  return process.env.APP_PUBLIC_URL?.trim() || fallback || "https://pr.finalrev.com";
+const PR_HUB_DEFAULT = "https://pr.finalrev.com";
+
+function normalizeOrigin(value: string | undefined): string | undefined {
+  const trimmed = value?.trim().replace(/\/$/, "");
+  return trimmed || undefined;
+}
+
+/** True when the host is this app (PR hub), not the main marketing site. */
+export function isPrHubOrigin(origin: string): boolean {
+  try {
+    const host = new URL(origin).hostname.toLowerCase();
+    if (host === "pr.finalrev.com") return true;
+    if (host === "localhost" || host === "127.0.0.1") return true;
+    if (host.endsWith(".vercel.app")) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** Canonical origin for OAuth redirects and post-login URLs. Prefers the PR hub request host over APP_PUBLIC_URL. */
+export function appOrigin(requestOrigin?: string): string {
+  const req = normalizeOrigin(requestOrigin);
+  if (req && isPrHubOrigin(req)) return req;
+
+  const env = normalizeOrigin(process.env.APP_PUBLIC_URL);
+  if (env && isPrHubOrigin(env)) return env;
+
+  return req || env || PR_HUB_DEFAULT;
 }
 
 export function safeReturnPath(raw: string | null | undefined): string {
