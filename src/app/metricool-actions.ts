@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { isMetricoolConfigured } from "@/lib/metricool/config";
 import { fetchWeeklyMetricoolMetrics } from "@/lib/metricool/metrics";
 import { analyzeGrowthFunnel, buildCombinedLearning, formatGrowthInsights } from "@/lib/metricool/insights";
-import { getWeeklyReport, upsertMetricoolSync, mergeGrowthInsights, getAllChannels, updateActionItems } from "@/lib/db";
+import { getWeeklyReport, upsertMetricoolSync, mergeGrowthInsights, updateActionItems } from "@/lib/db";
 import { getPreviousWeekKey } from "@/lib/weeks";
 import { isPostHogConfigured } from "@/lib/posthog/config";
 import { fetchWeeklyPostHogMetrics, fetchPostHogMetricsForPeriod } from "@/lib/posthog/metrics";
@@ -12,12 +12,8 @@ import { buildActionItems, parseStoredInsights } from "@/lib/action-items";
 import { buildDashboardPeriodContext } from "@/lib/period-context";
 import { postWeeklyDigest } from "@/lib/slack/weekly-digest";
 import { canAttributeSocialToTooltrace, resolveContentFocus } from "@/lib/intelligence/content-focus";
+import { isRedditSetupNeeded } from "@/lib/channels";
 import { parsePostHighlights } from "@/lib/post-highlights";
-
-async function redditSetupNeeded(): Promise<boolean> {
-  const reddit = (await getAllChannels()).find((c) => c.slug === "reddit");
-  return reddit?.status === "setup_needed";
-}
 
 async function fetchAlignedPostHog(weekStart: string, breakdown: Record<string, unknown> | null) {
   if (!isPostHogConfigured()) return null;
@@ -52,7 +48,7 @@ export async function syncMetricoolForWeek(weekStart: string) {
     ]);
 
     const growthInsights = analyzeGrowthFunnel(metrics, posthogMetrics, previousMetrics, {
-      redditSetupNeeded: await redditSetupNeeded(),
+      redditSetupNeeded: await isRedditSetupNeeded(),
       socialLinkedToTooltrace: canAttributeSocialToTooltrace(
         resolveContentFocus(parsePostHighlights(existing?.post_highlights_json)),
       ),
@@ -102,7 +98,7 @@ export async function refreshGrowthInsights(weekStart: string) {
     const growthInsights = analyzeGrowthFunnel(metricool, posthog, previousMetricool, {
       periodDays: metricool.periodDays,
       periodLabel: metricool.periodLabel,
-      redditSetupNeeded: await redditSetupNeeded(),
+      redditSetupNeeded: await isRedditSetupNeeded(),
       socialLinkedToTooltrace: canAttributeSocialToTooltrace(
         resolveContentFocus(parsePostHighlights(report.post_highlights_json)),
       ),

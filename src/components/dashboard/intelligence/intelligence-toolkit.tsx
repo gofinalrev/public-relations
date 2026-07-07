@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/utils";
-import { BookOpen, Copy, Check, Layers, RefreshCw, Wand2 } from "lucide-react";
+import { BookOpen, Copy, Check, Layers, RefreshCw, BarChart2 } from "lucide-react";
 
 type IntelligenceToolkitProps = {
   intel: WeeklyIntelligence;
@@ -169,7 +169,7 @@ function PredictPanel({
       <Card className="border-dashed">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Wand2 className="size-5" />
+            <BarChart2 className="size-5" />
             View range
           </CardTitle>
           <CardDescription>Log at least 2 posts on a platform to compare view ranges.</CardDescription>
@@ -182,7 +182,7 @@ function PredictPanel({
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Wand2 className="size-5 text-primary" />
+          <BarChart2 className="size-5 text-primary" />
           View range from logged posts
         </CardTitle>
         <CardDescription>

@@ -37,7 +37,7 @@ import { CaptionLinkPreview } from "@/components/dashboard/pr-toolkit/caption-li
 import { xThreadOverLimit, xWeightedLength } from "@/lib/social/x-text";
 import { cn } from "@/lib/utils";
 import {
-  Sparkles,
+  PenLine,
   Copy,
   Check,
   ChevronDown,
@@ -249,7 +249,7 @@ export function CaptionStudioPanel({
       <Card className="border-primary/20 bg-primary/[0.03]">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Sparkles className="size-5 text-primary" />
+            <PenLine className="size-5 text-primary" />
             Caption studio
           </CardTitle>
           <CardDescription>

@@ -3,14 +3,14 @@
 Internal dashboard for weekly social metrics, Tooltrace funnel data, and PR tooling (captions, copy, assets).
 
 **Production:** [pr.finalrev.com](https://pr.finalrev.com) (finalrev Vercel team)  
-**Access:** Google Sign-In — `@finalrev.com` only
+**Access:** Google Sign-In — `@finalrev.com` shop admins only
 
 ## Quick start (local)
 
 ```bash
 cp .env.example .env.local   # fill in keys (see below)
 npm install
-npm run dev                    # http://localhost:8787
+npm run dev                  # http://localhost:8787
 ```
 
 ## Environment variables
@@ -19,7 +19,7 @@ Copy `.env.example` → `.env.local`. Required for a full experience:
 
 | Variable | Purpose |
 |----------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SECRET` | Shop-admin-only access (`shop_admin` role in finalrev Supabase) |
+| `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SECRET` | Shop-admin-only access |
 | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Shared weekly data |
 | `POSTHOG_PERSONAL_API_KEY`, `POSTHOG_*` | Tooltrace + finalREV analytics |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Caption Studio |
@@ -31,11 +31,11 @@ Optional: Stripe (Pro subs), Metricool API, YouTube API, Slack webhook, `CRON_SE
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Dev server on port 8787 (LAN-friendly) |
+| `npm run dev` | Dev server on port 8787 |
 | `npm run build` | Production build |
-| `npm run deploy` | Build + deploy to Vercel (finalrev team) |
-| `npm run team:serve` | Build + serve on LAN (no Vercel) |
-| `npm run cron:weekly` | Monday sync + email (host Mac crontab) |
+| `npm run deploy` | Deploy to Vercel (finalrev team) |
+| `npm run team:serve` | Build + serve on LAN |
+| `npm run cron:weekly` | Monday sync + email |
 | `npm run import-pdf` | Import a Metricool PDF from CLI |
 
 ## Project layout
@@ -52,7 +52,7 @@ data/            # Local SQLite fallback (gitignored); production uses Turso
 
 ## Deployment
 
-Linked to **finalrev/social-media** on Vercel. Deploy:
+Linked to **finalrev/social-media** on Vercel:
 
 ```bash
 npm run deploy
@@ -66,6 +66,6 @@ npx vercel env pull .env.vercel --scope finalrev
 
 ## Weekly ops
 
-1. Julian imports Metricool PDF (Details tab) or runs `npm run import-pdf`
+1. Import Metricool PDF on the **Period** tab (or `npm run import-pdf`)
 2. PostHog syncs on page load
-3. Monday 9am PT: `scripts/local-weekly-sync.sh` (or `npm run cron:weekly`) sends the email brief
+3. Monday 9am PT: `npm run cron:weekly` sends the email brief

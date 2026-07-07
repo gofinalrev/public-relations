@@ -11,7 +11,7 @@ import { CopyBlocksPanel } from "./pr-toolkit/copy-blocks-panel";
 import { ContentIdeasPanel } from "./pr-toolkit/content-ideas-panel";
 import { ProductCheatsheetPanel } from "./pr-toolkit/product-cheatsheet-panel";
 import { CaptionStudioPanel } from "./pr-toolkit/caption-studio-panel";
-import { Image, Link2, MessageSquare, Lightbulb, BookOpen, Sparkles, Brain } from "lucide-react";
+import { Image, Link2, MessageSquare, Lightbulb, BookOpen, PenLine, ClipboardList } from "lucide-react";
 import { IntelligenceToolkit } from "./intelligence/intelligence-toolkit";
 import type { WeeklyIntelligence } from "@/lib/intelligence/types";
 import { parsePostHighlights } from "@/lib/post-highlights";
@@ -26,8 +26,8 @@ type PrToolkitViewProps = {
 };
 
 const SECTIONS = [
-  { id: "captions", label: "Captions", icon: Sparkles },
-  { id: "intel", label: "Insights", icon: Brain },
+  { id: "captions", label: "Captions", icon: PenLine },
+  { id: "intel", label: "Playbook", icon: ClipboardList },
   { id: "ideas", label: "Ideas", icon: Lightbulb },
   { id: "copy", label: "Copy", icon: MessageSquare },
   { id: "links", label: "Links", icon: Link2 },

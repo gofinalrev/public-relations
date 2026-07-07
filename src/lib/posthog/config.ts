@@ -13,12 +13,6 @@ export const POSTHOG_CONFIG = {
   ),
 };
 
-/** @deprecated use tooltraceProjectId — dashboard funnel queries Tooltrace project 167207 */
-export const POSTHOG_CONFIG_LEGACY = {
-  projectId: POSTHOG_CONFIG.finalrevProjectId,
-  hostnames: [...POSTHOG_CONFIG.tooltraceHostnames, ...POSTHOG_CONFIG.finalrevHostnames],
-};
-
 export function isPostHogConfigured(): boolean {
   return Boolean(POSTHOG_CONFIG.personalApiKey && POSTHOG_CONFIG.tooltraceProjectId);
 }

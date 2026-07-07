@@ -71,7 +71,3 @@ export function buildPostAutopsies(input: IntelligenceInput): PostAutopsy[] {
 
   return autopsies.sort((a, b) => a.verdict.localeCompare(b.verdict)).slice(0, 5);
 }
-
-export function getAutopsyForPost(autopsies: PostAutopsy[], postId: string): PostAutopsy | undefined {
-  return autopsies.find((a) => a.postId === postId);
-}

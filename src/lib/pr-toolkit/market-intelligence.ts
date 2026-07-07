@@ -91,9 +91,9 @@ export function archetypeGuidance(archetype: ContentArchetype, brand: CaptionBra
     customer_part:
       "Archetype: customer part story (OSH client spotlight style). what the part does, why the geometry was hard, outcome. don't invent customer names.",
     product_demo:
-      "Archetype: Tooltrace product demo. photo → trace → export loop in under 5 seconds of reading. show the magic moment.",
+      "Archetype: Tooltrace product demo. photo → trace → export loop in under 5 seconds of reading.",
     before_after:
-      "Archetype: before/after. messy drawer vs organized foam, manual trace vs AI, CAD hours vs minutes.",
+      "Archetype: before/after. messy drawer vs organized foam, manual trace vs Tooltrace, CAD hours vs minutes.",
     "5s_organization":
       "Archetype: 5S / organization. shop credibility for Tooltrace. shadowboard, missing tool visible, kaizen angle.",
   };

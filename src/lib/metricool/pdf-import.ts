@@ -4,10 +4,10 @@ import {
   upsertMetricoolSync,
   upsertPostHogSync,
   getWeeklyReport,
-  getAllChannels,
   saveMetricoolPdf,
   updatePostHighlights,
 } from "@/lib/db";
+import { isRedditSetupNeeded } from "@/lib/channels";
 import { isPostHogConfigured } from "@/lib/posthog/config";
 import { fetchWeeklyPostHogMetrics, fetchPostHogMetricsForPeriod } from "@/lib/posthog/metrics";
 import { analyzePostHogWeek, formatInsightsForStorage } from "@/lib/posthog/insights";
@@ -80,11 +80,6 @@ function localReportsBackup(weekStart: string, filename: string, buffer: Buffer)
   }
 }
 
-async function redditSetupNeeded(): Promise<boolean> {
-  const reddit = (await getAllChannels()).find((c) => c.slug === "reddit");
-  return reddit?.status === "setup_needed";
-}
-
 export type MetricoolPdfImportResult =
   | {
       ok: true;
@@ -150,7 +145,7 @@ export async function importMetricoolPdfBuffer(
     const analysisContext = {
       periodDays: parsed.periodDays,
       periodLabel: parsed.periodLabel,
-      redditSetupNeeded: await redditSetupNeeded(),
+      redditSetupNeeded: await isRedditSetupNeeded(),
       socialLinkedToTooltrace: canAttributeSocialToTooltrace(
         resolveContentFocus(parsePostHighlights(existingForPosts?.post_highlights_json)),
       ),

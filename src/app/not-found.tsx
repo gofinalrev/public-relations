@@ -5,10 +5,10 @@ export const metadata = {
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#fafafa] px-6 font-sans text-[#333]">
+    <main className="safe-top safe-bottom flex min-h-dvh items-center justify-center bg-background px-4 sm:px-6">
       <div className="text-center">
-        <p className="text-6xl font-light text-[#999]">404</p>
-        <p className="mt-2 text-sm text-[#666]">This page could not be found.</p>
+        <p className="text-5xl font-light text-muted-foreground sm:text-6xl">404</p>
+        <p className="mt-2 text-sm text-muted-foreground">This page could not be found.</p>
       </div>
     </main>
   );
