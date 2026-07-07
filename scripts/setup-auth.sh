@@ -32,7 +32,9 @@ done
 
 echo ""
 echo "Supabase → Authentication → URL Configuration → Redirect URLs must include:"
-echo "  https://pr.finalrev.com"
+echo "  https://pr.finalrev.com/auth/callback"
+echo ""
+echo "Or from finalrev repo: supabase login && supabase config push --project-ref zjkmxaqpybvbondulalx"
 echo ""
 echo "Google OAuth client ID/secret for PR hub go in Supabase (Google provider), not Vercel."
 echo ""

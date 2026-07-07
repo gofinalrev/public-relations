@@ -19,7 +19,7 @@ Copy `.env.example` → `.env.local`. Required for a full experience:
 
 | Variable | Purpose |
 |----------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase Google sign-in (redirect: `https://pr.finalrev.com`) |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase Google sign-in (redirect: `https://pr.finalrev.com/auth/callback`) |
 | `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Shared weekly data |
 | `POSTHOG_PERSONAL_API_KEY`, `POSTHOG_*` | Tooltrace + finalREV analytics |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Caption Studio (uses **soul.md** voice direction; editable in Toolkit → Captions) |

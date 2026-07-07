@@ -13,7 +13,11 @@ function notFound(req: NextRequest) {
 }
 
 function isPublic(pathname: string) {
-  return pathname === "/access-denied" || pathname.startsWith("/api/auth/");
+  return (
+    pathname === "/access-denied" ||
+    pathname === "/auth/callback" ||
+    pathname.startsWith("/api/auth/")
+  );
 }
 
 function cronOk(req: NextRequest) {
@@ -65,9 +69,9 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/access-denied", nextUrl.origin));
   }
 
-  if (nextUrl.searchParams.has("code") && pathname !== "/api/auth/callback") {
+  if (nextUrl.searchParams.has("code") && pathname !== "/auth/callback" && pathname !== "/api/auth/callback") {
     const callback = nextUrl.clone();
-    callback.pathname = "/api/auth/callback";
+    callback.pathname = "/auth/callback";
     return NextResponse.rewrite(callback);
   }
 
