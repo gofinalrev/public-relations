@@ -1,15 +1,12 @@
 "use client";
 
-import { createBrowserClient } from "@supabase/ssr";
+import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { AUTH_RETURN_COOKIE } from "@/lib/auth";
 import { PR_HUB_ORIGIN } from "@/lib/app-origin";
 import { markOAuthPending } from "@/components/auth/oauth-recovery";
 
 function supabaseBrowser() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) throw new Error("Supabase not configured");
-  return createBrowserClient(url, key);
+  return createSupabaseBrowserClient();
 }
 
 /** Must match Supabase allowlist exactly — https://pr.finalrev.com */

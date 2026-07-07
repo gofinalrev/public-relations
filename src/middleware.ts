@@ -29,13 +29,13 @@ function networkDenied(req: NextRequest, authOn: boolean) {
   return notFound(req);
 }
 
-async function shopAdminSession(req: NextRequest) {
+async function refreshAuthSession(req: NextRequest) {
   const client = createSupabaseMiddlewareClient(req);
-  if (!client) return null;
+  if (!client) return { user: null, client: null as null };
   const {
     data: { user },
   } = await client.supabase.auth.getUser();
-  return isShopAdmin(user) ? client.response : null;
+  return { user, client };
 }
 
 export default async function middleware(req: NextRequest) {
@@ -45,8 +45,8 @@ export default async function middleware(req: NextRequest) {
 
   if (pathname.startsWith("/api/cron")) {
     if (cronOk(req)) return NextResponse.next();
-    const session = await shopAdminSession(req);
-    if (session) return session;
+    const { user, client } = await refreshAuthSession(req);
+    if (client && isShopAdmin(user)) return client.response;
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -62,7 +62,9 @@ export default async function middleware(req: NextRequest) {
     pathname !== "/access-denied" &&
     !pathname.startsWith("/api/auth/")
   ) {
-    return NextResponse.redirect(new URL("/access-denied", nextUrl.origin));
+    const { client } = await refreshAuthSession(req);
+    const redirect = NextResponse.redirect(new URL("/access-denied", nextUrl.origin));
+    return client?.withResponse(redirect) ?? redirect;
   }
 
   if (nextUrl.searchParams.has("code") && pathname !== "/api/auth/callback") {
@@ -71,24 +73,33 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.rewrite(callback);
   }
 
-  if (pathname.startsWith("/brand/")) return NextResponse.next();
+  const { user, client } = await refreshAuthSession(req);
 
-  if (isPublic(pathname)) return NextResponse.next();
+  if (pathname.startsWith("/brand/")) {
+    return client?.response ?? NextResponse.next();
+  }
 
-  const client = createSupabaseMiddlewareClient(req);
-  if (client) {
-    const {
-      data: { user },
-    } = await client.supabase.auth.getUser();
-    if (isShopAdmin(user)) return client.response;
-    if (user) {
-      return NextResponse.redirect(new URL("/access-denied", nextUrl.origin));
+  if (isPublic(pathname)) {
+    if (pathname === "/sign-in" && isShopAdmin(user)) {
+      const redirect = NextResponse.redirect(new URL("/", nextUrl.origin));
+      return client?.withResponse(redirect) ?? redirect;
     }
+    return client?.response ?? NextResponse.next();
+  }
+
+  if (isShopAdmin(user)) {
+    return client!.response;
+  }
+
+  if (user) {
+    const redirect = NextResponse.redirect(new URL("/access-denied", nextUrl.origin));
+    return client?.withResponse(redirect) ?? redirect;
   }
 
   const signIn = new URL("/sign-in", nextUrl.origin);
   signIn.searchParams.set("return", pathname + nextUrl.search);
-  return NextResponse.redirect(signIn);
+  const redirect = NextResponse.redirect(signIn);
+  return client?.withResponse(redirect) ?? redirect;
 }
 
 export const config = {

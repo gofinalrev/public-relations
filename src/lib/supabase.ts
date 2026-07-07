@@ -2,55 +2,71 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseConfig } from "@/lib/auth";
+import { applySessionCookies, supabaseCookieOptions, type SessionCookie } from "@/lib/supabase-session";
 
-type CookieToSet = { name: string; value: string; options?: Parameters<NextResponse["cookies"]["set"]>[2] };
+type CookieToSet = SessionCookie;
 
-export async function createSupabaseRouteHandlerClient() {
+function serverClientOptions(cookieHandlers: {
+  getAll: () => { name: string; value: string }[];
+  setAll: (toSet: CookieToSet[]) => void;
+}) {
   const cfg = supabaseConfig();
   if (!cfg) return null;
+  return {
+    url: cfg.url,
+    key: cfg.key,
+    cookieHandlers,
+  };
+}
 
+export async function createSupabaseRouteHandlerClient() {
   const cookieStore = await cookies();
   let pending: CookieToSet[] = [];
 
-  const supabase = createServerClient(cfg.url, cfg.key, {
-    cookies: {
-      getAll: () => cookieStore.getAll(),
-      setAll: (toSet) => {
-        pending = toSet;
-        try {
-          toSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-        } catch {
-          /* route handler redirect */
-        }
-      },
+  const cfg = serverClientOptions({
+    getAll: () => cookieStore.getAll(),
+    setAll: (toSet) => {
+      pending = toSet;
+      try {
+        toSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+      } catch {
+        /* route handler redirect */
+      }
     },
+  });
+  if (!cfg) return null;
+
+  const supabase = createServerClient(cfg.url, cfg.key, {
+    cookieOptions: supabaseCookieOptions(),
+    cookies: cfg.cookieHandlers,
   });
 
   return {
     supabase,
     applyCookies(response: NextResponse) {
-      pending.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+      applySessionCookies(response, pending);
       return response;
     },
   };
 }
 
 export async function createSupabaseServerClient() {
-  const cfg = supabaseConfig();
+  const cookieStore = await cookies();
+  const cfg = serverClientOptions({
+    getAll: () => cookieStore.getAll(),
+    setAll: (toSet) => {
+      try {
+        toSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+      } catch {
+        /* refreshed in middleware */
+      }
+    },
+  });
   if (!cfg) throw new Error("Supabase not configured");
 
-  const cookieStore = await cookies();
   return createServerClient(cfg.url, cfg.key, {
-    cookies: {
-      getAll: () => cookieStore.getAll(),
-      setAll: (toSet) => {
-        try {
-          toSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-        } catch {
-          /* refreshed in middleware */
-        }
-      },
-    },
+    cookieOptions: supabaseCookieOptions(),
+    cookies: cfg.cookieHandlers,
   });
 }
 
@@ -59,16 +75,27 @@ export function createSupabaseMiddlewareClient(request: NextRequest) {
   if (!cfg) return null;
 
   let response = NextResponse.next({ request });
+  let sessionCookies: CookieToSet[] = [];
+
   const supabase = createServerClient(cfg.url, cfg.key, {
+    cookieOptions: supabaseCookieOptions(),
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (toSet) => {
+        sessionCookies = toSet;
         toSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
-        toSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        applySessionCookies(response, toSet);
       },
     },
   });
 
-  return { supabase, response };
+  return {
+    supabase,
+    response,
+    withResponse(next: NextResponse) {
+      applySessionCookies(next, sessionCookies);
+      return next;
+    },
+  };
 }
