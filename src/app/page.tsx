@@ -30,7 +30,7 @@ import { TeamShareLink } from "@/components/dashboard/team-share-link";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { SectionHeader } from "@/components/dashboard/section-header";
-import { isAuthConfigured } from "@/lib/auth";
+import { isAuthConfigured } from "@/lib/auth/allowed-email";
 import { isPostHogConfigured } from "@/lib/posthog/config";
 import { getIntegrationStatus, getIntegrationWarnings, getIntegrationOpsNotes } from "@/lib/integrations";
 import { OpsLogSink } from "@/components/dashboard/ops-log-sink";
